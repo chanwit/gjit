@@ -62,7 +62,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	
 	static class MyBasicInterpreter extends BasicInterpreter {
 
-		private Map<AbstractInsnNode, Value> def = new HashMap<AbstractInsnNode, Value>();
+		private Map<Value, AbstractInsnNode> def = new HashMap<Value, AbstractInsnNode>();
 		private Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
 		
 		@Override
@@ -70,7 +70,7 @@ public class Transformer extends Analyzer implements Opcodes {
 				Value value2) throws AnalyzerException {
 			Value v = super.binaryOperation(insn, value1, value2);
 			use.put(insn, new Value[]{value1, value2});
-			def.put(insn, v);
+			def.put(v, insn);
 			return v;
 		}
 
@@ -79,7 +79,7 @@ public class Transformer extends Analyzer implements Opcodes {
 				throws AnalyzerException {
 			use.put(insn, new Value[]{value});
 			Value v = super.copyOperation(insn, value);			
-			def.put(insn, v);			
+			def.put(v, insn);
 			return v;
 		}
 
@@ -88,14 +88,14 @@ public class Transformer extends Analyzer implements Opcodes {
 				throws AnalyzerException {
 			use.put(insn, (Value[])values.toArray(new Value[values.size()]));
 			Value v = super.naryOperation(insn, values);
-			def.put(insn, v);
+			def.put(v, insn);
 			return v;
 		}
 
 		@Override
 		public Value newOperation(AbstractInsnNode insn) {
 			Value v = super.newOperation(insn);
-			def.put(insn, v);
+			def.put(v, insn);
 			return v;
 		}
 
@@ -104,7 +104,7 @@ public class Transformer extends Analyzer implements Opcodes {
 				Value value2, Value value3) throws AnalyzerException {
 			use.put(insn, new Value[]{value1, value2, value3});
 			Value v = super.ternaryOperation(insn, value1, value2, value3);
-			def.put(insn, v);
+			def.put(v, insn);
 			return v;
 		}
 
@@ -113,7 +113,7 @@ public class Transformer extends Analyzer implements Opcodes {
 				throws AnalyzerException {
 			use.put(insn, new Value[]{value});
 			Value v = super.unaryOperation(insn, value);
-			def.put(insn, v);
+			def.put(v, insn);
 			return v;
 		}
 		
@@ -161,8 +161,18 @@ public class Transformer extends Analyzer implements Opcodes {
 	protected void postProcess(AbstractInsnNode insnNode,Interpreter interpreter) {
 		if(flag == true) {
 			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
-			System.out.println(i.def.size());
-			System.out.println(i.use.size());
+//			System.out.println(i.def.size());
+//			System.out.println(i.use.size());
+			Value[] values = i.use.get(insnNode);
+			for (int j = 0; j < values.length; j++) {
+				System.out.print(values[j]+", ");
+			}
+			System.out.println();
+			for (int j = 0; j < values.length; j++) {
+				AbstractInsnNode s = i.def.get(values[j]);
+				System.out.println(s);
+				System.out.println("(" + AbstractVisitor.OPCODES[s.getOpcode()] + ") " +s+", ");							
+			}
 			flag = false;
 		}
 	}
@@ -172,6 +182,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		MethodInsnNode iv = (MethodInsnNode)s;
 		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return false;
 		if(iv.name.startsWith("call") == false) return false;
+		System.out.println(iv.name);
 		flag = true;
 		return true;
 	}
