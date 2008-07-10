@@ -1,4 +1,5 @@
 package org.codehaus.groovy.gjit;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -21,6 +22,8 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.Frame;
 // import org.objectweb.asm.util.TraceMethodVisitor;
+import org.objectweb.asm.tree.analysis.Value;
+import org.objectweb.asm.util.AbstractVisitor;
 
 
 public class Transformer extends Analyzer implements Opcodes {
@@ -56,8 +59,67 @@ public class Transformer extends Analyzer implements Opcodes {
 	private String owner;
 	private int[] localTypes;
 	
+	static class MyBasicInterpreter extends BasicInterpreter {
+
+		private Map<AbstractInsnNode, Value> def = new HashMap<AbstractInsnNode, Value>();
+		private Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
+		
+		@Override
+		public Value binaryOperation(AbstractInsnNode insn, Value value1,
+				Value value2) throws AnalyzerException {
+			Value v = super.binaryOperation(insn, value1, value2);
+			use.put(insn, new Value[]{value1, value2});
+			def.put(insn, v);
+			return v;
+		}
+
+		@Override
+		public Value copyOperation(AbstractInsnNode insn, Value value)
+				throws AnalyzerException {
+			use.put(insn, new Value[]{value});
+			Value v = super.copyOperation(insn, value);			
+			def.put(insn, v);			
+			return v;
+		}
+
+		@Override
+		public Value naryOperation(AbstractInsnNode insn, List values)
+				throws AnalyzerException {
+			use.put(insn, (Value[])values.toArray(new Value[values.size()]));
+			Value v = super.naryOperation(insn, values);
+			def.put(insn, v);
+			return v;
+		}
+
+		@Override
+		public Value newOperation(AbstractInsnNode insn) {
+			Value v = super.newOperation(insn);
+			def.put(insn, v);
+			return v;
+		}
+
+		@Override
+		public Value ternaryOperation(AbstractInsnNode insn, Value value1,
+				Value value2, Value value3) throws AnalyzerException {
+			use.put(insn, new Value[]{value1, value2, value3});
+			Value v = super.ternaryOperation(insn, value1, value2, value3);
+			def.put(insn, v);
+			return v;
+		}
+
+		@Override
+		public Value unaryOperation(AbstractInsnNode insn, Value value)
+				throws AnalyzerException {
+			use.put(insn, new Value[]{value});
+			Value v = super.unaryOperation(insn, value);
+			def.put(insn, v);
+			return v;
+		}
+		
+	}
+	
 	public Transformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
-		super(new BasicInterpreter());
+		super(new MyBasicInterpreter());
 		this.owner = owner;
 		this.node = mn;
 		this.units = node.instructions;

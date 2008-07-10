@@ -238,9 +238,7 @@ public class Analyzer implements Opcodes {
                         }
                         AbstractInsnNode jump = j.label;
                         if (insnOpcode == JSR) {
-                            merge(jump, current, new Subroutine(j.label,
-                                    m.maxLocals,
-                                    j));
+                            merge(jump, current, new Subroutine(j.label, m.maxLocals, j));
                         } else {
                             merge(jump, current, subroutine);
                         }
