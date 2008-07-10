@@ -1,16 +1,21 @@
 package org.codehaus.groovy.gjit;
+import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
@@ -49,6 +54,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	private String[] siteNames;
 	private Integer currentSiteIndex = -1;
 	private String owner;
+	private int[] localTypes;
 	
 	public Transformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
 		super(new BasicInterpreter());
@@ -57,6 +63,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		this.units = node.instructions;
 		this.pack = pack;
 		this.siteNames = siteNames;
+		this.localTypes = new int[mn.maxLocals];
 	}
 	
 	public void transform() throws AnalyzerException {
@@ -78,12 +85,38 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;
 		if(unwrapBinaryPrimitiveCall(s, frame)) return Action.REPLACE;
 		if(unwrapCompare(s,frame)) return Action.REMOVE;
-		// if(clearCast(s)) return Action.REMOVE;
+		if(clearCast(s)) return Action.REMOVE;
 // TODO: clearCast(s);			
 //		if(correctNormalCall(s)) continue;
-//		correctTypeIfPrimitive(s);			
+		if(correctLocalType(s)) return Action.REPLACE;			
 		
 		return Action.NONE;
+	}
+
+	private boolean correctLocalType(AbstractInsnNode s) {
+		if(s.getOpcode() != ALOAD) return false;
+		VarInsnNode v = (VarInsnNode)s;
+		int type = localTypes[v.var];
+		if(type==0) return false;		
+		switch(type) {
+			case 'I':
+			case 'B':
+			case 'S': 
+			case 'Z':
+			case 'C':				
+				units.set(s, new VarInsnNode(ILOAD, v.var));
+				break;
+			case 'J':
+				units.set(s, new VarInsnNode(LLOAD, v.var));
+				break;
+			case 'F':
+				units.set(s, new VarInsnNode(FLOAD, v.var));
+				break;
+			case 'D':
+				units.set(s, new VarInsnNode(DLOAD, v.var));
+				break;
+		}			
+		return true;
 	}
 
 	private boolean eliminateBoxCastUnbox(AbstractInsnNode s) {
@@ -117,10 +150,80 @@ public class Transformer extends Analyzer implements Opcodes {
 		units.remove(s4);
 		return true;
 	}
+	
+	private int getPrimitive(String className) {
+		if(className.equals("java/lang/Integer")) return 'I';
+		if(className.equals("java/lang/Long")) return 'J';
+		if(className.equals("java/lang/Boolean")) return 'Z';
+		if(className.equals("java/lang/Byte")) return 'B';
+		if(className.equals("java/lang/Character")) return 'C';
+		if(className.equals("java/lang/Short")) return 'S';
+		if(className.equals("java/lang/Float")) return 'F';
+		if(className.equals("java/lang/Double")) return 'D';
+		return 0;
+	}
 
 	private boolean clearCast(AbstractInsnNode s) {
-		// TODO Auto-generated method stub
-		return false;
+//	    INVOKESTATIC TreeNode.$get$$class$java$lang$Integer()Ljava/lang/Class;
+//	    INVOKESTATIC org/codehaus/groovy/runtime/ScriptBytecodeAdapter.castToType(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;
+//	    CHECKCAST java/lang/Integer
+		if(s.getOpcode() != INVOKESTATIC) return false;
+		MethodInsnNode m = (MethodInsnNode)s;
+		if(m.name.startsWith("$get$$class$java$lang$")==false) return false;
+		AbstractInsnNode s1 = s.getNext(); if(s1 ==null ) return false;
+		if(s1.getOpcode() != INVOKESTATIC) return false;
+		MethodInsnNode m1 = (MethodInsnNode)s1;
+		if(m1.name.equals("castToType")==false) return false;
+		AbstractInsnNode s2 = s1.getNext(); if(s2 == null) return false;
+		if(s2.getOpcode() != CHECKCAST) return false;
+		TypeInsnNode t2 = (TypeInsnNode)s2;
+		if(t2.desc.startsWith("java/lang")==false) return false;
+
+		int type = getPrimitive(t2.desc);
+		
+		AbstractInsnNode s3 = s2.getNext();
+		if(s3.getOpcode()==ASTORE) {
+			VarInsnNode v3 = (VarInsnNode)s3;
+			switch(type) {
+				case 'I':
+				case 'B':
+				case 'S': 
+				case 'Z':
+				case 'C':				
+					units.set(s3, new VarInsnNode(ISTORE, v3.var));
+					break;
+				case 'J':
+					units.set(s3, new VarInsnNode(LSTORE, v3.var));
+					break;
+				case 'F':
+					units.set(s3, new VarInsnNode(FSTORE, v3.var));
+					break;
+				case 'D':
+					units.set(s3, new VarInsnNode(DSTORE, v3.var));
+					break;
+			}		
+			localTypes[v3.var] = type;
+			correctLocalVarInfo(type, v3);
+			
+		}
+		units.remove(s);
+		units.remove(s1);
+		units.remove(s2);
+		// TODO: change the next instruction to deal with PRIMITIVE		
+		return true;
+	}
+
+	private void correctLocalVarInfo(int type, VarInsnNode v3) {
+		List<?> vars = node.localVariables;
+		if(vars != null) {
+			for(int i=0;i<vars.size();i++) {
+				LocalVariableNode l = (LocalVariableNode)vars.get(i);
+				if(l.index==v3.var) {
+					l.desc = String.valueOf((char)type);
+					break;
+				}
+			}
+		}
 	}
 
 	private enum ComparingMethod { 
