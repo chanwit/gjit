@@ -154,8 +154,8 @@ public class Analyzer implements Opcodes {
         // initializes the data structures for the control flow analysis
 //        System.out.println("maxLocals: " + m.maxLocals);
 //        System.out.println("maxStack: " + m.maxStack);
-        Frame current = newFrame(m.maxLocals, m.maxStack*2);
-        Frame handler = newFrame(m.maxLocals, m.maxStack*2);
+        Frame current = newFrame(m.maxLocals, m.maxStack);
+        Frame handler = newFrame(m.maxLocals, m.maxStack);
         Type[] args = Type.getArgumentTypes(m.desc);
         int local = 0;
         if ((m.access & ACC_STATIC) == 0) {

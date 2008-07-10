@@ -329,6 +329,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
 		if(op == null) return false;
 		// TODO check type from "frame"		
+		int oldIndex = units.indexOf(s);
 		switch(op) {
 			case minus:
 				units.set(s, new InsnNode(ISUB)); break;
@@ -343,6 +344,12 @@ public class Transformer extends Analyzer implements Opcodes {
 			case rightShift:
 				units.set(s, new InsnNode(ISHR)); break;
 		}
+		s = units.get(oldIndex);
+		// SWAP,
+		// POP
+		units.insert(s, new InsnNode(POP));
+		units.insert(s, new InsnNode(SWAP));
+		
 		return true;
 	}
 
