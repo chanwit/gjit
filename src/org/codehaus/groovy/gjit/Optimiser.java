@@ -39,14 +39,20 @@ public class Optimiser extends ClassAdapter {
 	public MethodVisitor visitMethod(int access, String name, String desc,
 			String signature, String[] exceptions) {
 		MethodNode mn = methods.get(name+desc);
-		try {
-			if(name.equals("bottomUpTree"))
-				new Transformer(owner, mn, pack, siteNames).transform();
-		} catch (Throwable e) {
-			e.printStackTrace();
+		if(mn != null) {
+			try {
+				if(name.equals("bottomUpTree")) { 
+					new Transformer(owner, mn, pack, siteNames).transform();
+				}
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+			mn.accept(cv);
+			return mn;
+		} else {
+			return super.visitMethod(access, name, desc, signature, exceptions);
 		}
-		mn.accept(cv);
-		return mn;
+
 	}	
 
 	@Override
@@ -67,6 +73,7 @@ public class Optimiser extends ClassAdapter {
 		cr.accept(cv, 0);				
 		
 		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);		
+		System.out.println("all nodes" + cv.getMethods().size());
 		Optimiser cv2 = new Optimiser(cw, cv.getMethods());
 		cr.accept(cv2, 0);
 		byte[] outBytes = cw.toByteArray();

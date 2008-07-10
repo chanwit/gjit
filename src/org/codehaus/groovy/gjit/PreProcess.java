@@ -10,6 +10,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -30,18 +31,24 @@ public class PreProcess extends ClassAdapter {
 		GOT_NAME
 	};
 			
-	class CallSiteCollectorMV extends MethodNode {
+	class CallSiteCollectorMV extends MethodAdapter {
 	
+		public CallSiteCollectorMV(MethodVisitor mv) {
+			super(mv);
+		}
+
 		CallSiteCollectingState state = CallSiteCollectingState.START;
 		
 		private int size;
 		private int index;
 		private String[] names;
 
-		public CallSiteCollectorMV(int access, String name, String desc,
-				String signature, String[] exceptions) {
-			super(access, name, desc, signature, exceptions);
-		}
+//		public CallSiteCollectorMV(int access, String name, String desc,
+//				String signature, String[] exceptions) {
+//			super(access, name, desc, signature, exceptions);
+//		}
+		
+		
 
 		@Override
 		public void visitLdcInsn(Object cst) {
@@ -76,16 +83,21 @@ public class PreProcess extends ClassAdapter {
 		GOT_VALUE
 	};	
 	
-	class ConstantCollectorMV extends MethodNode {
+	class ConstantCollectorMV extends MethodAdapter {
+
+		public ConstantCollectorMV(MethodVisitor mv) {
+			super(mv);
+		}
 
 		private ConstantCollectingState state = ConstantCollectingState.START;
 		private ConstantPack pack = new ConstantPack();
 		private String key;
 		
-		public ConstantCollectorMV(int access, String name, String desc,
-				String signature, String[] exceptions) {
-			super(access, name, desc, signature, exceptions);
-		}
+//		public ConstantCollectorMV(int access, String name, String desc,
+//				String signature, String[] exceptions) {
+//			super(access, name, desc, signature, exceptions);
+//		}
+		
 
 		@Override
 		public void visitFieldInsn(int opcode, String owner, String name,
@@ -136,24 +148,34 @@ public class PreProcess extends ClassAdapter {
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String desc,
 			String signature, String[] exceptions) {
+		System.out.println(name);
 		if(this.optimisable == true) {
 			if(name.equals("$createCallSiteArray")) {
-				MethodNode mn = new CallSiteCollectorMV(access, name, desc, signature, exceptions);
-				MethodNode mn2 = new MethodNode(access, name, desc, signature, exceptions);
-				mn2.accept(cv);
-				methods.put(name+desc, mn2);
-				return mn;
+				return new CallSiteCollectorMV(super.visitMethod(access, name, desc, signature, exceptions));
 			} else if(name.equals("<clinit>")) {
-				MethodNode mn = new ConstantCollectorMV(access, name, desc, signature, exceptions);
-				MethodNode mn2 = new MethodNode(access, name, desc, signature, exceptions);
-				mn2.accept(cv);
-				methods.put(name+desc, mn2);
-				return mn;
-			} 			
+				return new ConstantCollectorMV(super.visitMethod(access, name, desc, signature, exceptions));				
+			} else if(isSkippable(name)) {
+				return super.visitMethod(access, name, desc, signature, exceptions);
+			}
 		} 
 		MethodNode mn = new MethodNode(access, name, desc, signature, exceptions);
 		methods.put(name+desc, mn);
 		return mn;
+	}
+
+	private boolean isSkippable(String name) {
+//		getMetaClass
+//		setMetaClass
+//		invokeMethod
+//		getProperty
+//		setProperty
+		if(name.startsWith("$get$$class$")) return true;
+		if(name.equals("class$")) return true;
+		if(name.equals("$getCallSiteArray")) return true;
+		if(name.equals("$getStaticMetaClass")) return true;
+		if(name.startsWith("super$1$")) return true;
+		if(name.startsWith("this$2$")) return true;
+		return false;
 	}
 
 	public static void main(String[] args) throws Throwable {
