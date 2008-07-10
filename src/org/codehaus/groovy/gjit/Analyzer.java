@@ -228,6 +228,7 @@ public class Analyzer implements Opcodes {
                     newControlFlowEdge(insn, insn.getNext());
                 } else {
                     current.init(f).execute(insnNode, interpreter);
+                    postProcess(insnNode, interpreter);
                     subroutine = subroutine == null ? null : subroutine.copy();
 
                     if (insnNode instanceof JumpInsnNode) {
@@ -335,7 +336,10 @@ public class Analyzer implements Opcodes {
         return frames;
     }
 
-    public Action process(InsnList units, Map<AbstractInsnNode, Frame> frames2, AbstractInsnNode insn) {    	
+    protected void postProcess(final AbstractInsnNode insnNode, final Interpreter interpreter) {
+	}
+
+	public Action process(InsnList units, Map<AbstractInsnNode, Frame> frames2, AbstractInsnNode insn) {    	
 		return Action.NONE;
 	}
 

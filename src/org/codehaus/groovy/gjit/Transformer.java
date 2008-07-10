@@ -21,6 +21,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.Interpreter;
 // import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
@@ -148,15 +149,31 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(unwrapBinaryPrimitiveCall(s, frame)) return Action.REPLACE;
 		if(unwrapCompare(s,frame)) return Action.REMOVE;
 		if(clearCast(s)) return Action.REMOVE;			
-		if(correctNormalCall(s)) return Action.ADD;
+		if(correctNormalCall(s)) return Action.NONE;
 		if(correctLocalType(s)) return Action.REPLACE;			
 		
 		return Action.NONE;
 	}
+	
+	boolean flag = false;
+	
+	@Override
+	protected void postProcess(AbstractInsnNode insnNode,Interpreter interpreter) {
+		if(flag == true) {
+			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
+			System.out.println(i.def.size());
+			System.out.println(i.use.size());
+			flag = false;
+		}
+	}
 
 	private boolean correctNormalCall(AbstractInsnNode s) {
-		// TODO Auto-generated method stub
-		return false;
+		if(s.getOpcode() != INVOKEINTERFACE) return false;
+		MethodInsnNode iv = (MethodInsnNode)s;
+		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return false;
+		if(iv.name.startsWith("call") == false) return false;
+		flag = true;
+		return true;
 	}
 
 	private boolean correctLocalType(AbstractInsnNode s) {
