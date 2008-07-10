@@ -210,7 +210,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(s.getOpcode() != GETSTATIC) return false;		
 		// System.out.println(">> called unwrapConst ");
 		FieldInsnNode f = (FieldInsnNode)s;
-		System.out.println(f.name);
+		// System.out.println(f.name);
 		if(f.name.startsWith("$const$")) {
 			LdcInsnNode newS = new LdcInsnNode(pack.get(f.name));
 			// System.out.println(newS);
