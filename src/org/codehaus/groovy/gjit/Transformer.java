@@ -76,7 +76,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(unwrapConst(s)) return Action.REPLACE;
 		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;
 		if(unwrapBinaryPrimitiveCall(s, frame)) return Action.REPLACE;
-		if(unwrapCompare(s,frame)) return Action.REMOVE;
+		if(unwrapCompare(s,frame)) return Action.REMOVE;		
 // TODO: clearCast(s);			
 //		if(correctNormalCall(s)) continue;
 //		correctTypeIfPrimitive(s);			
@@ -114,7 +114,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		return true;
 	}
 
-	public void preTransform() {
+	private void preTransform() {
 		ListIterator<AbstractInsnNode> stmts = units.iterator();
 		while(stmts.hasNext()) {
 			AbstractInsnNode s = stmts.next();
