@@ -85,12 +85,16 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;
 		if(unwrapBinaryPrimitiveCall(s, frame)) return Action.REPLACE;
 		if(unwrapCompare(s,frame)) return Action.REMOVE;
-		if(clearCast(s)) return Action.REMOVE;
-// TODO: clearCast(s);			
-//		if(correctNormalCall(s)) continue;
+		if(clearCast(s)) return Action.REMOVE;			
+		if(correctNormalCall(s)) return Action.ADD;
 		if(correctLocalType(s)) return Action.REPLACE;			
 		
 		return Action.NONE;
+	}
+
+	private boolean correctNormalCall(AbstractInsnNode s) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	private boolean correctLocalType(AbstractInsnNode s) {
