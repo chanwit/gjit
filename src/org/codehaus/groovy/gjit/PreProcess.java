@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.MethodNode;
 public class PreProcess extends ClassAdapter {
 	
 	private String className;
-	private boolean optimisable = false;
+	private boolean groovyClassFile = false;
 	private Map<String, MethodNode> methods = new HashMap<String, MethodNode>(); 
 
 	public PreProcess(ClassVisitor cv) {
@@ -140,7 +140,7 @@ public class PreProcess extends ClassAdapter {
 	@Override
 	public FieldVisitor visitField(int access, String name, String desc,String signature, Object value) {
 		if(name.startsWith("__timeStamp__")==true) {
-			this.optimisable = true;
+			this.groovyClassFile = true;
 		}
 		return super.visitField(access, name, desc, signature, value);
 	}
@@ -148,8 +148,8 @@ public class PreProcess extends ClassAdapter {
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String desc,
 			String signature, String[] exceptions) {
-		System.out.println(name);
-		if(this.optimisable == true) {
+		// System.out.println(name);
+		if(this.groovyClassFile == true) {
 			if(name.equals("$createCallSiteArray")) {
 				return new CallSiteCollectorMV(super.visitMethod(access, name, desc, signature, exceptions));
 			} else if(name.equals("<clinit>")) {
@@ -157,10 +157,12 @@ public class PreProcess extends ClassAdapter {
 			} else if(isSkippable(name)) {
 				return super.visitMethod(access, name, desc, signature, exceptions);
 			}
-		} 
-		MethodNode mn = new MethodNode(access, name, desc, signature, exceptions);
-		methods.put(name+desc, mn);
-		return mn;
+			MethodNode mn = new MethodNode(access, name, desc, signature, exceptions);
+			methods.put(name+desc, mn);
+			return mn;			
+		} else {
+			return super.visitMethod(access, name, desc, signature, exceptions);
+		}
 	}
 
 	private boolean isSkippable(String name) {
@@ -190,6 +192,10 @@ public class PreProcess extends ClassAdapter {
 
 	public Map<String, MethodNode> getMethods() {
 		return methods;
+	}
+
+	public boolean isGroovyClassFile() {
+		return groovyClassFile;
 	}
 
 }

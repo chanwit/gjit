@@ -115,9 +115,9 @@ public class Transformer extends Analyzer implements Opcodes {
 	}
 
 	private void preTransform() {
-		ListIterator<AbstractInsnNode> stmts = units.iterator();
+		ListIterator<?> stmts = units.iterator();
 		while(stmts.hasNext()) {
-			AbstractInsnNode s = stmts.next();
+			AbstractInsnNode s = (AbstractInsnNode)stmts.next();
 			switch(phase) {
 				case PHASE_CALLSITE: phase = processPhaseCallSite(s); break;
 			}	
@@ -177,7 +177,8 @@ public class Transformer extends Analyzer implements Opcodes {
 		// System.out.println("frame: " + frame);
 		BinOp op=null;
 		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
-		if(op == null) return false;	
+		if(op == null) return false;
+		// TODO check type from "frame"		
 		switch(op) {
 			case minus:
 				units.set(s, new InsnNode(ISUB)); break;
@@ -208,14 +209,10 @@ public class Transformer extends Analyzer implements Opcodes {
 
 	private boolean unwrapConst(AbstractInsnNode s) {		
 		if(s.getOpcode() != GETSTATIC) return false;		
-		// System.out.println(">> called unwrapConst ");
 		FieldInsnNode f = (FieldInsnNode)s;
-		// System.out.println(f.name);
 		if(f.name.startsWith("$const$")) {
 			LdcInsnNode newS = new LdcInsnNode(pack.get(f.name));
-			// System.out.println(newS);
 			units.set(s, newS);
-			// System.out.println(">> replaced !");
 			return true;
 		}
 		return false;
