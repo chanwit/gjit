@@ -41,7 +41,7 @@ public class Optimiser extends ClassAdapter {
 		MethodNode mn = methods.get(name+desc);
 		if(mn != null) {
 			try {
-				if(name.equals("bottomUpTree")) { 
+				if(name.equals("bottomUpTree") || name.equals("itemCheck")) { 
 					new Transformer(owner, mn, pack, siteNames).transform();
 				}
 			} catch (Throwable e) {

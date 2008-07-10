@@ -73,15 +73,54 @@ public class Transformer extends Analyzer implements Opcodes {
 //		 System.out.println(frame);
 //		 System.out.println("index: " + units.indexOf(s));
 		if(extractCallSiteName(s)) return Action.NONE;
+		if(eliminateBoxCastUnbox(s)) return Action.REMOVE;
 		if(unwrapConst(s)) return Action.REPLACE;
 		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;
 		if(unwrapBinaryPrimitiveCall(s, frame)) return Action.REPLACE;
-		if(unwrapCompare(s,frame)) return Action.REMOVE;		
+		if(unwrapCompare(s,frame)) return Action.REMOVE;
+		// if(clearCast(s)) return Action.REMOVE;
 // TODO: clearCast(s);			
 //		if(correctNormalCall(s)) continue;
 //		correctTypeIfPrimitive(s);			
 		
 		return Action.NONE;
+	}
+
+	private boolean eliminateBoxCastUnbox(AbstractInsnNode s) {
+//	    INVOKESTATIC org/codehaus/groovy/runtime/typehandling/DefaultTypeTransformation.box(I)Ljava/lang/Object;
+//	    INVOKESTATIC TreeNode.$get$$class$java$lang$Integer()Ljava/lang/Class;
+//	    INVOKESTATIC org/codehaus/groovy/runtime/ScriptBytecodeAdapter.castToType(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;
+//	    CHECKCAST java/lang/Integer
+//	    INVOKESTATIC org/codehaus/groovy/runtime/typehandling/DefaultTypeTransformation.intUnbox(Ljava/lang/Object;)I
+		if(s.getOpcode() != INVOKESTATIC) return false;
+		AbstractInsnNode s1 = s.getNext();    if(s1 == null) return false;
+		if(s1.getOpcode() != INVOKESTATIC) return false;
+		AbstractInsnNode s2 = s1.getNext();   if(s2 == null) return false;
+		if(s2.getOpcode() != INVOKESTATIC) return false;		
+		AbstractInsnNode s3 = s2.getNext();   if(s3 == null) return false;
+		if(s3.getOpcode() != CHECKCAST) return false;				
+		AbstractInsnNode s4 = s3.getNext();	  if(s4 == null) return false;
+		if(s4.getOpcode() != INVOKESTATIC) return false;						
+		MethodInsnNode m = (MethodInsnNode)s;
+		MethodInsnNode m1 = (MethodInsnNode)s1;
+		MethodInsnNode m2 = (MethodInsnNode)s2;
+		MethodInsnNode m4 = (MethodInsnNode)s4;		
+//		if(m.owner.equals(DEFAULT_TYPE_TRANSFORMATION)==false) return false;
+		if(m.name.equals("box") == false) return false;
+		if(m1.name.startsWith("$get$$class$") == false) return false;
+		if(m2.name.startsWith("castToType") == false) return false;
+		if(m4.name.endsWith("Unbox")== false) return false;
+		units.remove(s);
+		units.remove(s1);
+		units.remove(s2);
+		units.remove(s3);
+		units.remove(s4);
+		return true;
+	}
+
+	private boolean clearCast(AbstractInsnNode s) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	private enum ComparingMethod { 
@@ -98,7 +137,11 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(m.name.startsWith("compare")==false) return false;
 		if(m.desc.equals("(Ljava/lang/Object;Ljava/lang/Object;)Z")==false) return false;
 		JumpInsnNode s1 = (JumpInsnNode)s.getNext();
-		ComparingMethod compare = ComparingMethod.valueOf(m.name);
+		ComparingMethod compare;
+		try { compare = ComparingMethod.valueOf(m.name); } 
+		catch(IllegalArgumentException e) {
+			return false;
+		}
 //		System.out.println(">>>>> did unwrapping compare");
 		switch(compare) {
 			case compareGreaterThan:
