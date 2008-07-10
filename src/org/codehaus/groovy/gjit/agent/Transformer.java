@@ -15,7 +15,25 @@ public class Transformer implements ClassFileTransformer {
 	public byte[] transform(ClassLoader loader, String className,
 			Class<?> classBeingRedefined, ProtectionDomain protectionDomain,
 			byte[] classfileBuffer) throws IllegalClassFormatException {
-		return classfileBuffer;		
+		//
+		// check the condition which class is going to be transform
+		// do trasformation
+		//
+		if(className.equals("groovy/lang/MetaClassImpl")) {
+			return instrumentingMetaClass(classfileBuffer);
+		} else if(className.startsWith("java") || className.startsWith("sun") || className.startsWith("soot")) {
+			return classfileBuffer;
+		} else {
+			// SootClass s = Scene.v().loadClass(className, SootClass.SIGNATURES);
+			// s.getFiel
+			return classfileBuffer;
+		}
+		
+	}
+
+	private byte[] instrumentingMetaClass(byte[] classfileBuffer) {
+		
+		return null;
 	}
 
 }
