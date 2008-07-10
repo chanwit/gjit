@@ -62,7 +62,7 @@ public class GJITOptimiser extends ClassAdapter {
 		byte[] bytes = new byte[(int) r.length()];
 		r.readFully(bytes);
 		ClassReader cr = new ClassReader(bytes);
-		GJITPreProcess cv = new GJITPreProcess(new EmptyVisitor());
+		PreProcess cv = new PreProcess(new EmptyVisitor());
 		cr.accept(cv, 0);				
 		
 		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);		
