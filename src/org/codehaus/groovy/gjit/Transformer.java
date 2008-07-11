@@ -1,4 +1,5 @@
 package org.codehaus.groovy.gjit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -20,8 +21,10 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
+import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
+import org.objectweb.asm.tree.analysis.SourceValue;
 // import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
@@ -60,43 +63,51 @@ public class Transformer extends Analyzer implements Opcodes {
 	private String owner;
 	private int[] localTypes;
 	
+	static class DefValue extends BasicValue {
+
+		private AbstractInsnNode source;
+
+		public DefValue(AbstractInsnNode insn, Type type) {
+			super(type);
+			this.source = insn;
+		}
+		
+	}
+	
 	static class MyBasicInterpreter extends BasicInterpreter {
 
-		private Map<Value, AbstractInsnNode> def = new HashMap<Value, AbstractInsnNode>();
 		private Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
-		
+				
 		@Override
 		public Value binaryOperation(AbstractInsnNode insn, Value value1,
-				Value value2) throws AnalyzerException {
+				Value value2) throws AnalyzerException {			
 			Value v = super.binaryOperation(insn, value1, value2);
 			use.put(insn, new Value[]{value1, value2});
-			def.put(v, insn);
-			return v;
+			if(v == null) return new DefValue(insn, null);
+			return new DefValue(insn, ((BasicValue)v).getType());
 		}
 
 		@Override
 		public Value copyOperation(AbstractInsnNode insn, Value value)
 				throws AnalyzerException {
 			use.put(insn, new Value[]{value});
-			Value v = super.copyOperation(insn, value);			
-			def.put(v, insn);
-			return v;
-		}
+			Value v = super.copyOperation(insn, value);
+			if(v == null) return new DefValue(insn, null);
+			return new DefValue(insn, ((BasicValue)v).getType());		}
 
 		@Override
 		public Value naryOperation(AbstractInsnNode insn, List values)
 				throws AnalyzerException {
 			use.put(insn, (Value[])values.toArray(new Value[values.size()]));
 			Value v = super.naryOperation(insn, values);
-			def.put(v, insn);
-			return v;
+			if(v == null) return new DefValue(insn, null);
+			return new DefValue(insn, ((BasicValue)v).getType());
 		}
 
 		@Override
 		public Value newOperation(AbstractInsnNode insn) {
 			Value v = super.newOperation(insn);
-			def.put(v, insn);
-			return v;
+			return new DefValue(insn, ((BasicValue)v).getType());
 		}
 
 		@Override
@@ -104,8 +115,8 @@ public class Transformer extends Analyzer implements Opcodes {
 				Value value2, Value value3) throws AnalyzerException {
 			use.put(insn, new Value[]{value1, value2, value3});
 			Value v = super.ternaryOperation(insn, value1, value2, value3);
-			def.put(v, insn);
-			return v;
+			if(v == null) return new DefValue(insn, null);
+			return new DefValue(insn, ((BasicValue)v).getType());
 		}
 
 		@Override
@@ -113,8 +124,8 @@ public class Transformer extends Analyzer implements Opcodes {
 				throws AnalyzerException {
 			use.put(insn, new Value[]{value});
 			Value v = super.unaryOperation(insn, value);
-			def.put(v, insn);
-			return v;
+			if(v == null) return new DefValue(insn, null);
+			return new DefValue(insn, ((BasicValue)v).getType());
 		}
 		
 	}
@@ -165,14 +176,19 @@ public class Transformer extends Analyzer implements Opcodes {
 //			System.out.println(i.use.size());
 			Value[] values = i.use.get(insnNode);
 			for (int j = 0; j < values.length; j++) {
+				System.out.println(j + ".");
 				System.out.print(values[j]+", ");
+				System.out.println(values[j].getClass());
+				System.out.println(((DefValue)values[j]).source);
+				System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+				System.out.println("=================");
 			}
-			System.out.println();
-			for (int j = 0; j < values.length; j++) {
-				AbstractInsnNode s = i.def.get(values[j]);
-				System.out.println(s);
-				System.out.println("(" + AbstractVisitor.OPCODES[s.getOpcode()] + ") " +s+", ");							
-			}
+//			System.out.println();
+//			for (int j = 0; j < values.length; j++) {
+//				List<AbstractInsnNode> s = i.def.get(values[j]);
+//				System.out.println("size:" + s.size());
+//				// System.out.println("(" + AbstractVisitor.OPCODES[s.getOpcode()] + ") " +s+", ");							
+//			}
 			flag = false;
 		}
 	}
