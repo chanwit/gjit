@@ -32,6 +32,7 @@ import org.objectweb.asm.util.AbstractVisitor;
 
 public class Transformer extends Analyzer implements Opcodes {
 
+	private static final String SCRIPT_BYTECODE_ADAPTER = "org/codehaus/groovy/runtime/ScriptBytecodeAdapter";
 	private static final String CALL_SITE_INTERFACE = "org/codehaus/groovy/runtime/callsite/CallSite";
 	private static final String DEFAULT_TYPE_TRANSFORMATION = "org/codehaus/groovy/runtime/typehandling/DefaultTypeTransformation";
 	private InsnList units;
@@ -81,10 +82,9 @@ public class Transformer extends Analyzer implements Opcodes {
 		@Override
 		public Value binaryOperation(AbstractInsnNode insn, Value value1,
 				Value value2) throws AnalyzerException {			
-			Value v = super.binaryOperation(insn, value1, value2);
 			use.put(insn, new Value[]{value1, value2});
-			if(v == null) return new DefValue(insn, null);
-			return new DefValue(insn, ((BasicValue)v).getType());
+			Value v = super.binaryOperation(insn, value1, value2);
+			return def(insn, v);
 		}
 
 		@Override
@@ -92,40 +92,42 @@ public class Transformer extends Analyzer implements Opcodes {
 				throws AnalyzerException {
 			use.put(insn, new Value[]{value});
 			Value v = super.copyOperation(insn, value);
-			if(v == null) return new DefValue(insn, null);
-			return new DefValue(insn, ((BasicValue)v).getType());		}
+			return def(insn, v);
+		}
 
 		@Override
 		public Value naryOperation(AbstractInsnNode insn, List values)
 				throws AnalyzerException {
 			use.put(insn, (Value[])values.toArray(new Value[values.size()]));
 			Value v = super.naryOperation(insn, values);
-			if(v == null) return new DefValue(insn, null);
-			return new DefValue(insn, ((BasicValue)v).getType());
+			return def(insn, v);
 		}
 
 		@Override
 		public Value newOperation(AbstractInsnNode insn) {
 			Value v = super.newOperation(insn);
-			return new DefValue(insn, ((BasicValue)v).getType());
+			return def(insn, v);
 		}
 
 		@Override
 		public Value ternaryOperation(AbstractInsnNode insn, Value value1,
 				Value value2, Value value3) throws AnalyzerException {
-			use.put(insn, new Value[]{value1, value2, value3});
+			use.put(insn, new Value[]{value1,value2,value3});
 			Value v = super.ternaryOperation(insn, value1, value2, value3);
-			if(v == null) return new DefValue(insn, null);
-			return new DefValue(insn, ((BasicValue)v).getType());
+			return def(insn, v);
 		}
-
+		
 		@Override
 		public Value unaryOperation(AbstractInsnNode insn, Value value)
 				throws AnalyzerException {
 			use.put(insn, new Value[]{value});
 			Value v = super.unaryOperation(insn, value);
-			if(v == null) return new DefValue(insn, null);
-			return new DefValue(insn, ((BasicValue)v).getType());
+			return def(insn, v);
+		}
+		
+		private DefValue def(AbstractInsnNode insn, Value value) {
+			if(value == null) return new DefValue(insn, null); 
+			return new DefValue(insn, ((BasicValue)value).getType());
 		}
 		
 	}
@@ -172,35 +174,35 @@ public class Transformer extends Analyzer implements Opcodes {
 	protected void postProcess(AbstractInsnNode insnNode,Interpreter interpreter) {
 		if(flag == true) {
 			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
-//			System.out.println(i.def.size());
-//			System.out.println(i.use.size());
 			Value[] values = i.use.get(insnNode);
 			for (int j = 0; j < values.length; j++) {
 				System.out.println(j + ".");
 				System.out.print(values[j]+", ");
 				System.out.println(values[j].getClass());
+				// if(values[j] instanceof DefValue) {
 				System.out.println(((DefValue)values[j]).source);
 				System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+				// }
 				System.out.println("=================");
 			}
-//			System.out.println();
-//			for (int j = 0; j < values.length; j++) {
-//				List<AbstractInsnNode> s = i.def.get(values[j]);
-//				System.out.println("size:" + s.size());
-//				// System.out.println("(" + AbstractVisitor.OPCODES[s.getOpcode()] + ") " +s+", ");							
-//			}
 			flag = false;
 		}
 	}
 
 	private boolean correctNormalCall(AbstractInsnNode s) {
-		if(s.getOpcode() != INVOKEINTERFACE) return false;
-		MethodInsnNode iv = (MethodInsnNode)s;
-		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return false;
-		if(iv.name.startsWith("call") == false) return false;
-		System.out.println(iv.name);
-		flag = true;
-		return true;
+		if(s.getOpcode() != INVOKEINTERFACE && 
+		   s.getOpcode() != INVOKESTATIC) return false;
+		MethodInsnNode iv = (MethodInsnNode)s;		
+		if(iv.owner.equals(CALL_SITE_INTERFACE) && iv.name.startsWith("call")) {
+			System.out.println(iv.name);
+			flag = true;
+			return true;
+		} else if (iv.owner.equals(SCRIPT_BYTECODE_ADAPTER) && !iv.name.equals("unwrap")) {
+			System.out.println(iv.name);
+			flag = true;
+			return true;
+		}
+		return false;
 	}
 
 	private boolean correctLocalType(AbstractInsnNode s) {
@@ -346,7 +348,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	private boolean unwrapCompare(AbstractInsnNode s, Frame frame) {
 		if(s.getOpcode() != Opcodes.INVOKESTATIC) return false;
 		MethodInsnNode m = (MethodInsnNode)s;
-		if(m.owner.equals("org/codehaus/groovy/runtime/ScriptBytecodeAdapter")==false) return false;
+		if(m.owner.equals(SCRIPT_BYTECODE_ADAPTER)==false) return false;
 		if(m.name.startsWith("compare")==false) return false;
 		if(m.desc.equals("(Ljava/lang/Object;Ljava/lang/Object;)Z")==false) return false;
 		JumpInsnNode s1 = (JumpInsnNode)s.getNext();
