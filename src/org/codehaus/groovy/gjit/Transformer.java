@@ -188,6 +188,18 @@ public class Transformer extends Analyzer implements Opcodes {
 								primType = "I";
 								primTypeName = "int";
 								break;
+				case Type.LONG:  boxType = "java/lang/Long";
+								primType = "J";
+								primTypeName = "long";
+								break;
+				case Type.FLOAT:  boxType = "java/lang/Float";
+								primType = "F";
+								primTypeName = "float";
+								break;
+				case Type.DOUBLE:  boxType = "java/lang/Double";
+								primType = "D";
+								primTypeName = "double";
+								break;				
 			}
 			TypeInsnNode tnode = new TypeInsnNode(CHECKCAST, boxType);
 			MethodInsnNode iv = new MethodInsnNode(INVOKEVIRTUAL, boxType, primTypeName + "Value", "()" + primType);
@@ -210,7 +222,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(clearCast(s)) return Action.REMOVE;			
 		if(correctNormalCall(s)) return Action.NONE;
 		if(correctLocalType(s)) return Action.REPLACE;			
-		if(correctReturn(s)) return Action.NONE;	
+		if(correctUnbox(s)) return Action.NONE;	
 		return Action.NONE;
 	}
 	
@@ -245,7 +257,16 @@ public class Transformer extends Analyzer implements Opcodes {
 					if(t.equals(bv.getType())==false && bv.isReference()==false) {
 //						System.out.print("expected: " + t + ", found: ");
 //						System.out.print(values[j]+", ");
-						markForLaterBox.put(((DefValue)bv).source, bv.getType());
+						try {
+							markForLaterBox.put(((DefValue)bv).source, bv.getType());
+						} catch(ClassCastException e) {
+							System.out.print(m.owner+".");
+							System.out.print(m.name);
+							System.out.println(m.desc);
+							System.out.println(bv);
+							// e.printStackTrace();
+							//throw new RuntimeException(e);
+						}
 					}
 //					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
 				}								
@@ -259,18 +280,45 @@ public class Transformer extends Analyzer implements Opcodes {
 			// Type[] types = Type.getArgumentTypes(m.desc);
 			Value[] values = i.use.get(insnNode);			
 			System.out.println(AbstractVisitor.OPCODES[insnNode.getOpcode()]);
-			DefValue defValue = (DefValue)values[0];
-			if(defValue.isReference()) {			
-				markForLaterUnbox.put(insnNode, Type.INT_TYPE);
+			try {
+				DefValue defValue = (DefValue)values[0];
+				if(defValue.isReference()) {				
+					markForLaterUnbox.put(insnNode, flag2Type);
+				}
+			} catch(ClassCastException e) {
+				// TODO: what's happening?
 			}
 			flag2 = false;
 		}
 	}
 	
-	private boolean correctReturn(AbstractInsnNode s) {
-		if(s.getOpcode() != IRETURN) return false;
-		flag2 = true;
-		return true;
+	private Type flag2Type;
+	
+	private boolean correctUnbox(AbstractInsnNode s) {
+		flag2Type = null;
+		switch(s.getOpcode()) {
+			case ISTORE:
+			case IRETURN:
+					flag2Type = Type.INT_TYPE;
+					break;
+			case LRETURN:
+			case LSTORE: 
+					flag2Type = Type.LONG_TYPE;
+					break;
+			case FRETURN:
+			case FSTORE: 
+					flag2Type = Type.FLOAT_TYPE;
+					break;
+			case DRETURN:
+			case DSTORE: 
+					flag2Type = Type.DOUBLE_TYPE;
+					break;
+		}
+		if(flag2Type != null) {			
+			flag2 = true;
+			return true;				
+		}
+		return false;
 	}
 
 
@@ -349,6 +397,10 @@ public class Transformer extends Analyzer implements Opcodes {
 	}
 	
 	private int getPrimitive(String className) {
+		if(className.charAt(0)=='L' && className.charAt(className.length()-1)==';') {
+			className = className.substring(1,className.length()-1);
+		}
+		// System.out.println("getPrimitive: " + className);
 		if(className.equals("java/lang/Integer")) return 'I';
 		if(className.equals("java/lang/Long")) return 'J';
 		if(className.equals("java/lang/Boolean")) return 'Z';
@@ -376,38 +428,40 @@ public class Transformer extends Analyzer implements Opcodes {
 		TypeInsnNode t2 = (TypeInsnNode)s2;
 		if(t2.desc.startsWith("java/lang")==false) return false;
 
-		int type = getPrimitive(t2.desc);
-		
+		int type = getPrimitive(t2.desc);		
 		AbstractInsnNode s3 = s2.getNext();
-		if(s3.getOpcode()==ASTORE) {
-			VarInsnNode v3 = (VarInsnNode)s3;
+		fixASTORE(type, s3);
+		units.remove(s);
+		units.remove(s1);
+		units.remove(s2);
+		// TODO: change the next instruction to deal with PRIMITIVE		
+		return true;
+	}
+
+	private void fixASTORE(int type, AbstractInsnNode nextS) {
+		if(nextS.getOpcode()==ASTORE) {
+			VarInsnNode v3 = (VarInsnNode)nextS;
 			switch(type) {
 				case 'I':
 				case 'B':
 				case 'S': 
 				case 'Z':
 				case 'C':				
-					units.set(s3, new VarInsnNode(ISTORE, v3.var));
+					units.set(nextS, new VarInsnNode(ISTORE, v3.var));
 					break;
 				case 'J':
-					units.set(s3, new VarInsnNode(LSTORE, v3.var));
+					units.set(nextS, new VarInsnNode(LSTORE, v3.var));
 					break;
 				case 'F':
-					units.set(s3, new VarInsnNode(FSTORE, v3.var));
+					units.set(nextS, new VarInsnNode(FSTORE, v3.var));
 					break;
 				case 'D':
-					units.set(s3, new VarInsnNode(DSTORE, v3.var));
+					units.set(nextS, new VarInsnNode(DSTORE, v3.var));
 					break;
 			}		
 			localTypes[v3.var] = type;
-			correctLocalVarInfo(type, v3);
-			
+			correctLocalVarInfo(type, v3);			
 		}
-		units.remove(s);
-		units.remove(s1);
-		units.remove(s2);
-		// TODO: change the next instruction to deal with PRIMITIVE		
-		return true;
 	}
 
 	private void correctLocalVarInfo(int type, VarInsnNode v3) {
@@ -523,25 +577,40 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(op == null) return false;
 		// TODO check type from "frame"		
 		int oldIndex = units.indexOf(s);
+		Value v2 = frame.getStack(frame.getStackSize()-1); // peek
+		Value v1 = frame.getStack(frame.getStackSize()-2); // peek
+		// TODO if(v1.sort != v2.sort) do something
+		int offset = 0;
+		System.out.println(v1);
+		System.out.println(v2);
+		if(((BasicValue)v1).getType().equals(Type.LONG_TYPE)) offset = 1;
+		else if(((BasicValue)v1).getType().equals(Type.FLOAT_TYPE)) offset = 2;
+		else if(((BasicValue)v1).getType().equals(Type.DOUBLE_TYPE)) offset = 3;
 		switch(op) {
 			case minus:
-				units.set(s, new InsnNode(ISUB)); break;
+				units.set(s, new InsnNode(ISUB + offset)); break;
 			case plus:
-				units.set(s, new InsnNode(IADD)); break;
+				units.set(s, new InsnNode(IADD + offset)); break;
 			case multiply:
-				units.set(s, new InsnNode(IMUL)); break;
+				units.set(s, new InsnNode(IMUL + offset)); break;
 			case div:
-				units.set(s, new InsnNode(IDIV)); break;
+				units.set(s, new InsnNode(IDIV + offset)); break;
 			case leftShift:
-				units.set(s, new InsnNode(ISHL)); break;
+				units.set(s, new InsnNode(ISHL + offset)); break;
 			case rightShift:
-				units.set(s, new InsnNode(ISHR)); break;
+				units.set(s, new InsnNode(ISHR + offset)); break;
 		}
 		s = units.get(oldIndex);
+		if(v1.getSize()==1) {
 		// SWAP,
 		// POP
-		units.insert(s, new InsnNode(POP));
-		units.insert(s, new InsnNode(SWAP));
+			units.insert(s, new InsnNode(POP));
+			units.insert(s, new InsnNode(SWAP));
+		} else if(v1.getSize()==2){
+			units.insert(s, new InsnNode(POP));
+			units.insert(s, new InsnNode(POP2));
+			units.insert(s, new InsnNode(DUP2_X1));			
+		}
 		
 		return true;
 	}
@@ -560,9 +629,11 @@ public class Transformer extends Analyzer implements Opcodes {
 	private boolean unwrapConst(AbstractInsnNode s) {		
 		if(s.getOpcode() != GETSTATIC) return false;		
 		FieldInsnNode f = (FieldInsnNode)s;
-		if(f.name.startsWith("$const$")) {
+		if(f.name.startsWith("$const$")) {			
 			LdcInsnNode newS = new LdcInsnNode(pack.get(f.name));
-			units.set(s, newS);
+			AbstractInsnNode s1 = s.getNext();			
+			fixASTORE(getPrimitive(f.desc), s1);
+			units.set(s, newS);			
 			return true;
 		}
 		return false;
