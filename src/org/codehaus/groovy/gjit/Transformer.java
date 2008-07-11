@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -63,6 +65,8 @@ public class Transformer extends Analyzer implements Opcodes {
 	private Integer currentSiteIndex = -1;
 	private String owner;
 	private int[] localTypes;
+	
+	private Map<AbstractInsnNode, Type> markForLaterBox = new HashMap<AbstractInsnNode, Type>();	
 	
 	static class DefValue extends BasicValue {
 
@@ -145,11 +149,33 @@ public class Transformer extends Analyzer implements Opcodes {
 	public void transform() throws AnalyzerException {
 		preTransform();
 		this.analyze(this.owner, this.node);
+		postTransform();
 //		TraceMethodVisitor t = new TraceMethodVisitor(null);
 //		node.accept(t);
 //		System.out.println(t.text);		
 	}	
 	   
+	private void postTransform() {
+		Set<Entry<AbstractInsnNode, Type>> set = markForLaterBox.entrySet();
+		for (Entry<AbstractInsnNode, Type> entry : set) {			
+			AbstractInsnNode s = entry.getKey();
+			Type t = entry.getValue();
+			String boxType=null;
+			String primType=null;
+			switch(t.getSort()) {			
+				case Type.INT: boxType = "java/lang/Integer";
+							   primType = "I";
+							   break;
+				case Type.LONG: boxType = "java/lang/Long";
+							   primType = "J";
+							   break;
+				// TODO: other types
+			}
+			MethodInsnNode iv = new MethodInsnNode(INVOKESTATIC, boxType, "valueOf", "("+ primType +")L"+boxType+";");
+			units.insert(s, iv);
+		}		
+	}
+
 	@Override
 	public Action process(InsnList units, Map<AbstractInsnNode, Frame> frames, AbstractInsnNode s) {		
 		Frame frame = frames.get(s);
@@ -180,16 +206,26 @@ public class Transformer extends Analyzer implements Opcodes {
 			Value[] values = i.use.get(insnNode);
 			if(m.getOpcode() == INVOKESTATIC) {
 				for (int j = 0; j < values.length; j++) {
+					Type t = types[j];
+					BasicValue bv = ((BasicValue)values[j]);
 					System.out.print(j + ". ");
-					System.out.print("expected: " + types[j] + ", found: ");
-					System.out.print(values[j]+", ");
-					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+					if(t.equals(bv.getType())==false && bv.isReference()==false) {
+						System.out.print("expected: " + t + ", found: ");
+						System.out.print(values[j]+", ");
+						markForLaterBox.put(((DefValue)bv).source, bv.getType());
+					}
+					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);					
 				}				
 			} else {
 				for (int j = 1; j < values.length; j++) {
+					Type t = types[j-1];
+					BasicValue bv = ((BasicValue)values[j]);					
 					System.out.print(j + ". ");
-					System.out.print("expected: " + types[j-1] + ", found: ");
-					System.out.print(values[j]+", ");
+					if(t.equals(bv.getType())==false && bv.isReference()==false) {
+						System.out.print("expected: " + t + ", found: ");
+						System.out.print(values[j]+", ");
+						markForLaterBox.put(((DefValue)bv).source, bv.getType());
+					}
 					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
 				}								
 			}
