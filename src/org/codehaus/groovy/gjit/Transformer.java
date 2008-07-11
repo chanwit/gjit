@@ -174,17 +174,26 @@ public class Transformer extends Analyzer implements Opcodes {
 	protected void postProcess(AbstractInsnNode insnNode,Interpreter interpreter) {
 		if(flag == true) {
 			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
+			MethodInsnNode m = (MethodInsnNode)insnNode;
+			System.out.println(m.desc);
+			Type[] types = Type.getArgumentTypes(m.desc);
 			Value[] values = i.use.get(insnNode);
-			for (int j = 0; j < values.length; j++) {
-				System.out.println(j + ".");
-				System.out.print(values[j]+", ");
-				System.out.println(values[j].getClass());
-				// if(values[j] instanceof DefValue) {
-				System.out.println(((DefValue)values[j]).source);
-				System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
-				// }
-				System.out.println("=================");
+			if(m.getOpcode() == INVOKESTATIC) {
+				for (int j = 0; j < values.length; j++) {
+					System.out.print(j + ". ");
+					System.out.print("expected: " + types[j] + ", found: ");
+					System.out.print(values[j]+", ");
+					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+				}				
+			} else {
+				for (int j = 1; j < values.length; j++) {
+					System.out.print(j + ". ");
+					System.out.print("expected: " + types[j-1] + ", found: ");
+					System.out.print(values[j]+", ");
+					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+				}								
 			}
+			System.out.println("=================");			
 			flag = false;
 		}
 	}
