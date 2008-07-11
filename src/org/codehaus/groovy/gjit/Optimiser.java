@@ -71,12 +71,13 @@ public class Optimiser extends ClassAdapter {
 		ClassReader cr = new ClassReader(bytes);
 		PreProcess cv = new PreProcess(new EmptyVisitor());
 		cr.accept(cv, 0);				
-		
-		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);		
+						
 		if(cv.isGroovyClassFile()) {
+			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);			
 			Optimiser cv2 = new Optimiser(cw, cv.getMethods());
 			cr.accept(cv2, 0);
 			byte[] outBytes = cw.toByteArray();
+			new File("C:\\groovy-ck1\\groovy\\my\\out2\\TreeNode.class").delete();
 			RandomAccessFile ro = new RandomAccessFile(new File("C:\\groovy-ck1\\groovy\\my\\out2\\TreeNode.class"), "rw");
 			ro.write(outBytes);
 			ro.close();

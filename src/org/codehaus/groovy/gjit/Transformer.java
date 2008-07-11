@@ -66,7 +66,8 @@ public class Transformer extends Analyzer implements Opcodes {
 	private String owner;
 	private int[] localTypes;
 	
-	private Map<AbstractInsnNode, Type> markForLaterBox = new HashMap<AbstractInsnNode, Type>();	
+	private Map<AbstractInsnNode, Type> markForLaterBox = new HashMap<AbstractInsnNode, Type>();
+	private Map<AbstractInsnNode, Type> markForLaterUnbox = new HashMap<AbstractInsnNode, Type>();
 	
 	static class DefValue extends BasicValue {
 
@@ -172,8 +173,27 @@ public class Transformer extends Analyzer implements Opcodes {
 				// TODO: other types
 			}
 			MethodInsnNode iv = new MethodInsnNode(INVOKESTATIC, boxType, "valueOf", "("+ primType +")L"+boxType+";");
+			if(s.getOpcode()==SWAP) s = s.getPrevious(); // work around for inserted SWAP,POP
 			units.insert(s, iv);
-		}		
+		}
+		Set<Entry<AbstractInsnNode, Type>> set2 = markForLaterUnbox.entrySet();
+		for (Entry<AbstractInsnNode, Type> entry : set2) {
+			AbstractInsnNode s = entry.getKey();
+			Type t = entry.getValue();
+			String boxType=null;
+			String primType = null;
+			String primTypeName = null;
+			switch(t.getSort()) {
+				case Type.INT:  boxType = "java/lang/Integer";
+								primType = "I";
+								primTypeName = "int";
+								break;
+			}
+			TypeInsnNode tnode = new TypeInsnNode(CHECKCAST, boxType);
+			MethodInsnNode iv = new MethodInsnNode(INVOKEVIRTUAL, boxType, primTypeName + "Value", "()" + primType);
+			units.insertBefore(s, tnode);
+			units.insert(tnode, iv);			
+		}
 	}
 
 	@Override
@@ -190,60 +210,80 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(clearCast(s)) return Action.REMOVE;			
 		if(correctNormalCall(s)) return Action.NONE;
 		if(correctLocalType(s)) return Action.REPLACE;			
-		
+		if(correctReturn(s)) return Action.NONE;	
 		return Action.NONE;
 	}
 	
 	boolean flag = false;
+	boolean flag2 = false;
 	
 	@Override
 	protected void postProcess(AbstractInsnNode insnNode,Interpreter interpreter) {
 		if(flag == true) {
 			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
 			MethodInsnNode m = (MethodInsnNode)insnNode;
-			System.out.println(m.desc);
+			// System.out.println(m.desc);
 			Type[] types = Type.getArgumentTypes(m.desc);
 			Value[] values = i.use.get(insnNode);
 			if(m.getOpcode() == INVOKESTATIC) {
 				for (int j = 0; j < values.length; j++) {
 					Type t = types[j];
 					BasicValue bv = ((BasicValue)values[j]);
-					System.out.print(j + ". ");
+					//System.out.print(j + ". ");
 					if(t.equals(bv.getType())==false && bv.isReference()==false) {
-						System.out.print("expected: " + t + ", found: ");
-						System.out.print(values[j]+", ");
+//						System.out.print("expected: " + t + ", found: ");
+//						System.out.print(values[j]+", ");
 						markForLaterBox.put(((DefValue)bv).source, bv.getType());
 					}
-					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);					
+//					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);					
 				}				
-			} else {
+			} else if(m.getOpcode() == INVOKEINTERFACE){
 				for (int j = 1; j < values.length; j++) {
 					Type t = types[j-1];
 					BasicValue bv = ((BasicValue)values[j]);					
-					System.out.print(j + ". ");
+					//System.out.print(j + ". ");
 					if(t.equals(bv.getType())==false && bv.isReference()==false) {
-						System.out.print("expected: " + t + ", found: ");
-						System.out.print(values[j]+", ");
+//						System.out.print("expected: " + t + ", found: ");
+//						System.out.print(values[j]+", ");
 						markForLaterBox.put(((DefValue)bv).source, bv.getType());
 					}
-					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+//					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
 				}								
 			}
-			System.out.println("=================");			
+//			System.out.println("=================");			
 			flag = false;
 		}
+		if(flag2 == true) {
+			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
+			// MethodInsnNode m = (MethodInsnNode)insnNode;
+			// Type[] types = Type.getArgumentTypes(m.desc);
+			Value[] values = i.use.get(insnNode);			
+			System.out.println(AbstractVisitor.OPCODES[insnNode.getOpcode()]);
+			DefValue defValue = (DefValue)values[0];
+			if(defValue.isReference()) {			
+				markForLaterUnbox.put(insnNode, Type.INT_TYPE);
+			}
+			flag2 = false;
+		}
 	}
+	
+	private boolean correctReturn(AbstractInsnNode s) {
+		if(s.getOpcode() != IRETURN) return false;
+		flag2 = true;
+		return true;
+	}
+
 
 	private boolean correctNormalCall(AbstractInsnNode s) {
 		if(s.getOpcode() != INVOKEINTERFACE && 
 		   s.getOpcode() != INVOKESTATIC) return false;
 		MethodInsnNode iv = (MethodInsnNode)s;		
 		if(iv.owner.equals(CALL_SITE_INTERFACE) && iv.name.startsWith("call")) {
-			System.out.println(iv.name);
+			//System.out.println(iv.name);
 			flag = true;
 			return true;
 		} else if (iv.owner.equals(SCRIPT_BYTECODE_ADAPTER) && !iv.name.equals("unwrap")) {
-			System.out.println(iv.name);
+			//System.out.println(iv.name);
 			flag = true;
 			return true;
 		}

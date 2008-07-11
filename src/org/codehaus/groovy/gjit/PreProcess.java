@@ -79,8 +79,8 @@ public class PreProcess extends ClassAdapter {
 	
 	enum ConstantCollectingState {
 		START,
-		GOT_NAME,
-		GOT_VALUE
+		GOT_VALUE,
+		GOT_NAME
 	};	
 	
 	class ConstantCollectorMV extends MethodAdapter {
@@ -91,7 +91,7 @@ public class PreProcess extends ClassAdapter {
 
 		private ConstantCollectingState state = ConstantCollectingState.START;
 		private ConstantPack pack = new ConstantPack();
-		private String key;
+		private Object value;
 		
 //		public ConstantCollectorMV(int access, String name, String desc,
 //				String signature, String[] exceptions) {
@@ -102,10 +102,9 @@ public class PreProcess extends ClassAdapter {
 		@Override
 		public void visitFieldInsn(int opcode, String owner, String name,
 				String desc) {
-			if(state == ConstantCollectingState.START || 
-			   state == ConstantCollectingState.GOT_VALUE) {
-				if(name.startsWith("$const$")) {
-					key = name;
+			if( state == ConstantCollectingState.GOT_VALUE) {
+				if(name.startsWith("$const$")) {					
+					pack.put(name, value);
 					state = ConstantCollectingState.GOT_NAME;
 				}
 				// TODO get __timeStamp
@@ -115,8 +114,9 @@ public class PreProcess extends ClassAdapter {
 
 		@Override
 		public void visitLdcInsn(Object cst) {
-			if(state == ConstantCollectingState.GOT_NAME) {
-				pack.put(key, cst);
+			if( state == ConstantCollectingState.START ||
+				state == ConstantCollectingState.GOT_NAME) {
+				value = cst;				
 				state = ConstantCollectingState.GOT_VALUE;
 			}
 			super.visitLdcInsn(cst);
