@@ -24,8 +24,10 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
+import org.objectweb.asm.tree.analysis.SimpleVerifier;
 import org.objectweb.asm.tree.analysis.SourceValue;
 // import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.analysis.Value;
@@ -80,7 +82,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		
 	}
 	
-	static class MyBasicInterpreter extends BasicInterpreter {
+	static class MyBasicInterpreter extends BasicVerifier {
 
 		private Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
 				
@@ -518,7 +520,8 @@ public class Transformer extends Analyzer implements Opcodes {
 			switch(phase) {
 				case PHASE_CALLSITE: phase = processPhaseCallSite(s); break;
 			}	
-		}				
+		}
+		//node.localVariables.add(null);
 	}
 
 	private Phase processPhaseCallSite(AbstractInsnNode s0) {
@@ -577,12 +580,13 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(op == null) return false;
 		// TODO check type from "frame"		
 		int oldIndex = units.indexOf(s);
+		if(s.getPrevious().getOpcode()==LLOAD) System.out.println(">> Found it !!");
 		Value v2 = frame.getStack(frame.getStackSize()-1); // peek
 		Value v1 = frame.getStack(frame.getStackSize()-2); // peek
 		// TODO if(v1.sort != v2.sort) do something
 		int offset = 0;
-		System.out.println(v1);
-		System.out.println(v2);
+		System.out.println("v1:" +v1);
+		System.out.println("v2:" +v2);
 		if(((BasicValue)v1).getType().equals(Type.LONG_TYPE)) offset = 1;
 		else if(((BasicValue)v1).getType().equals(Type.FLOAT_TYPE)) offset = 2;
 		else if(((BasicValue)v1).getType().equals(Type.DOUBLE_TYPE)) offset = 3;
