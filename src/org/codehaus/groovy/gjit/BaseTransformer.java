@@ -1,39 +1,32 @@
 package org.codehaus.groovy.gjit;
 
-import java.util.HashMap;
 import java.util.ListIterator;
 import java.util.Map;
 
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Interpreter;
 import org.objectweb.asm.tree.analysis.Value;
 
-public class NewTransformer extends Analyzer implements Opcodes {
+public class BaseTransformer extends Analyzer implements Opcodes {
 
-	private int callSiteVar = -1;
-	private ConstantPack pack;
-	private String[] siteNames;
-	private Integer currentSiteIndex = -1;
 	private String owner;
 	
 	private MethodNode node;
 	private InsnList units;
-	private Map<AbstractInsnNode, Value[]> use;		
 	
-	public NewTransformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
+	protected Map<AbstractInsnNode, Value[]> use;
+	protected int callSiteVar;
+	
+	public BaseTransformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
 		super(new MyBasicInterpreter());		
 		this.owner = owner;
 		this.node = mn;
 		this.units = node.instructions;
-		this.pack = pack;
-		this.siteNames = siteNames;
 	}
 	
 	public void transform() throws AnalyzerException {
@@ -41,8 +34,7 @@ public class NewTransformer extends Analyzer implements Opcodes {
 		this.analyze(this.owner, this.node);
 		this.use = ((MyBasicInterpreter)this.interpreter).use;
 	}	
-	
-	
+		
 	private enum Phase {
 		PHASE_CALLSITE,
 		PHASE_NEXT_1,
@@ -69,7 +61,6 @@ public class NewTransformer extends Analyzer implements Opcodes {
 				case PHASE_CALLSITE: phase = processPhaseCallSite(s); break;
 			}	
 		}
-		//node.localVariables.add(null);
 	}	
 	
 	private Phase processPhaseCallSite(AbstractInsnNode s0) {
