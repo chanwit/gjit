@@ -1,7 +1,5 @@
 package org.codehaus.groovy.gjit;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -22,14 +20,9 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
-import org.objectweb.asm.tree.analysis.SimpleVerifier;
-import org.objectweb.asm.tree.analysis.SourceValue;
-// import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
 
@@ -70,18 +63,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	
 	private Map<AbstractInsnNode, Type> markForLaterBox = new HashMap<AbstractInsnNode, Type>();
 	private Map<AbstractInsnNode, Type> markForLaterUnbox = new HashMap<AbstractInsnNode, Type>();
-	
-	static class DefValue extends BasicValue {
-
-		private AbstractInsnNode source;
-
-		public DefValue(AbstractInsnNode insn, Type type) {
-			super(type);
-			this.source = insn;
-		}
 		
-	}
-	
 	static class MyBasicInterpreter extends BasicVerifier {
 
 		private Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
