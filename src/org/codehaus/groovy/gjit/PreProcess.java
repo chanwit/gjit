@@ -154,7 +154,7 @@ public class PreProcess extends ClassAdapter {
 				return new CallSiteCollectorMV(super.visitMethod(access, name, desc, signature, exceptions));
 			} else if(name.equals("<clinit>")) {
 				return new ConstantCollectorMV(super.visitMethod(access, name, desc, signature, exceptions));				
-			} else if(isSkippable(name)) {
+			} else if(isSkippable(name,desc)) {
 				return super.visitMethod(access, name, desc, signature, exceptions);
 			}
 			MethodNode mn = new MethodNode(access, name, desc, signature, exceptions);
@@ -165,18 +165,18 @@ public class PreProcess extends ClassAdapter {
 		}
 	}
 
-	private boolean isSkippable(String name) {
-//		getMetaClass
-//		setMetaClass
-//		invokeMethod
-//		getProperty
-//		setProperty
+	private boolean isSkippable(String name, String desc) {
 		if(name.startsWith("$get$$class$")) return true;
 		if(name.equals("class$")) return true;
 		if(name.equals("$getCallSiteArray")) return true;
 		if(name.equals("$getStaticMetaClass")) return true;
 		if(name.startsWith("super$1$")) return true;
 		if(name.startsWith("this$2$")) return true;
+		if((name+desc).equals("getMetaClass()Lgroovy/lang/MetaClass;")) return true;
+		if((name+desc).equals("setMetaClass(Lgroovy/lang/MetaClass;)V")) return true;
+		if((name+desc).equals("invokeMethod(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/Object;")) return true;
+		if((name+desc).equals("getProperty(Ljava/lang/String;)Ljava/lang/Object;")) return true;
+		if((name+desc).equals("setProperty(Ljava/lang/String;Ljava/lang/Object;)V")) return true;
 		return false;
 	}
 
