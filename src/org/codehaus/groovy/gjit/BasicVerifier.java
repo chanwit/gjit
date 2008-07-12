@@ -70,13 +70,15 @@ public class BasicVerifier extends BasicInterpreter {
                 break;
             case ALOAD:
                 if (!((BasicValue) value).isReference()) {
-                    throw new AnalyzerException(null,"an object reference",value);
+                	printError("","an object reference",value);
+                    // throw new AnalyzerException(null,"an object reference",value);
                 }
                 return value;
             case ASTORE:
                 if (!((BasicValue) value).isReference()
                         && value != BasicValue.RETURNADDRESS_VALUE) {
-                    throw new AnalyzerException(null,"an object reference or a return address",value);
+                	printError("","an object reference or a return address",value);
+                    // throw new AnalyzerException(null,"an object reference or a return address",value);
                 }
                 return value;
             default:
@@ -85,7 +87,8 @@ public class BasicVerifier extends BasicInterpreter {
         // type is necessarily a primitive type here,
         // so value must be == to expected value
         if (value != expected) {
-            throw new AnalyzerException(null, expected, value);
+        	printError("", expected, value);
+            // throw new AnalyzerException(null, expected, value);
         }
         return value;
     }
@@ -174,7 +177,8 @@ public class BasicVerifier extends BasicInterpreter {
                 throw new Error("Internal error.");
         }
         if (!isSubTypeOf(value, expected)) {
-            throw new AnalyzerException(null, expected, value);
+        	printError("", expected, value);
+            // throw new AnalyzerException(null, expected, value);
         }
         return super.unaryOperation(insn, value);
     }
@@ -295,9 +299,11 @@ public class BasicVerifier extends BasicInterpreter {
                 throw new Error("Internal error.");
         }
         if (!isSubTypeOf(value1, expected1)) {
-            throw new AnalyzerException("First argument", expected1, value1);
+        	printError("First argument", expected1, value1);
+            // throw new AnalyzerException("First argument", expected1, value1);
         } else if (!isSubTypeOf(value2, expected2)) {
-            throw new AnalyzerException("Second argument", expected2, value2);
+        	printError("Second argument", expected2, value2);
+            //throw new AnalyzerException("Second argument", expected2, value2);
         }
         if (insn.getOpcode() == AALOAD) {
             return getElementValue(value1);
@@ -306,7 +312,12 @@ public class BasicVerifier extends BasicInterpreter {
         }
     }
 
-    public Value ternaryOperation(
+    private void printError(String string, Object ex, Object v) {
+		System.err.println(">>>> ERROR >>>> " + string + ": expected " + ex + ", but found " + v);
+		Thread.dumpStack();
+	}
+
+	public Value ternaryOperation(
         final AbstractInsnNode insn,
         final Value value1,
         final Value value2,
@@ -355,14 +366,14 @@ public class BasicVerifier extends BasicInterpreter {
                 throw new Error("Internal error.");
         }
         if (!isSubTypeOf(value1, expected1)) {
-            throw new AnalyzerException("First argument", "a " + expected1
-                    + " array reference", value1);
-        } else if (value2 != BasicValue.INT_VALUE) {
-            throw new AnalyzerException("Second argument",
-                    BasicValue.INT_VALUE,
-                    value2);
+        	printError("First argument", "a " + expected1 + " array reference", value1);
+            // throw new AnalyzerException("First argument", "a " + expected1 + " array reference", value1);
+        } else if (((BasicValue)value2).getType() != ((BasicValue)(BasicValue.INT_VALUE)).getType()) {
+        	printError("Second argument", BasicValue.INT_VALUE, value2);
+        	// throw new AnalyzerException("Second argument", BasicValue.INT_VALUE, value2);
         } else if (!isSubTypeOf(value3, expected3)) {
-            throw new AnalyzerException("Third argument", expected3, value3);
+        	printError("Third argument", expected3, value3);
+        	// throw new AnalyzerException("Third argument", expected3, value3);
         }
         return null;
     }
@@ -393,9 +404,12 @@ public class BasicVerifier extends BasicInterpreter {
                 Value expected = newValue(args[j++]);
                 Value encountered = (Value) values.get(i++);
                 if (!isSubTypeOf(encountered, expected)) {
-                	System.out.print(((MethodInsnNode) insn).name);
-                	System.out.println(((MethodInsnNode) insn).desc);
-                    throw new AnalyzerException("Argument " + j,expected,encountered);
+                	// System.out.print(((MethodInsnNode) insn).name);
+                	// System.out.println(((MethodInsnNode) insn).desc);
+                	// TODO revert sys err back to throwing
+                	// System.err.println("Expecting Argument " + j + " " + expected + ", " + encountered);
+                	printError("Argument " + j,expected,encountered);
+                    // throw new AnalyzerException("Argument " + j,expected,encountered);
                 }
             }
         }

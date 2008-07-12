@@ -47,8 +47,8 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
+import org.objectweb.asm.util.AbstractVisitor;
 
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
@@ -59,7 +59,7 @@ import org.objectweb.asm.tree.analysis.Interpreter;
  */
 public class Analyzer implements Opcodes {
 
-    private final Interpreter interpreter;
+    protected final Interpreter interpreter;
 
     private InsnList insns;
 
@@ -219,7 +219,7 @@ public class Analyzer implements Opcodes {
                 
                 int insnOpcode = insnNode.getOpcode();
                 int insnType = insnNode.getType();
-
+                
                 if (insnType == AbstractInsnNode.LABEL
                         || insnType == AbstractInsnNode.LINE
                         || insnType == AbstractInsnNode.FRAME)
@@ -227,6 +227,9 @@ public class Analyzer implements Opcodes {
                 	merge(insn.getNext(), f, subroutine);
                     newControlFlowEdge(insn, insn.getNext());
                 } else {
+                    // DEBUG INFO
+                    System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+                	
                     current.init(f).execute(insnNode, interpreter);
                     postProcess(insnNode, interpreter);
                     subroutine = subroutine == null ? null : subroutine.copy();
@@ -325,8 +328,9 @@ public class Analyzer implements Opcodes {
                     }
                 }
             } catch (AnalyzerException e) {
-                throw new AnalyzerException("Error at instruction " + insn
-                        + ": " + e.getMessage(), e);
+            	e.printStackTrace();
+                //throw new AnalyzerException("Error at instruction " + insn
+                //        + ": " + e.getMessage(), e);
             } catch (Exception e) {
                 throw new AnalyzerException("Error at instruction " + insn
                         + ": " + e.getMessage(), e);

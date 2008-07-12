@@ -21,7 +21,6 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
@@ -62,64 +61,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	private int[] localTypes;
 	
 	private Map<AbstractInsnNode, Type> markForLaterBox = new HashMap<AbstractInsnNode, Type>();
-	private Map<AbstractInsnNode, Type> markForLaterUnbox = new HashMap<AbstractInsnNode, Type>();
-		
-	static class MyBasicInterpreter extends BasicVerifier {
-
-		private Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
-				
-		@Override
-		public Value binaryOperation(AbstractInsnNode insn, Value value1,
-				Value value2) throws AnalyzerException {			
-			use.put(insn, new Value[]{value1, value2});
-			Value v = super.binaryOperation(insn, value1, value2);
-			return def(insn, v);
-		}
-
-		@Override
-		public Value copyOperation(AbstractInsnNode insn, Value value)
-				throws AnalyzerException {
-			use.put(insn, new Value[]{value});
-			Value v = super.copyOperation(insn, value);
-			return def(insn, v);
-		}
-
-		@Override
-		public Value naryOperation(AbstractInsnNode insn, List values)
-				throws AnalyzerException {
-			use.put(insn, (Value[])values.toArray(new Value[values.size()]));
-			Value v = super.naryOperation(insn, values);
-			return def(insn, v);
-		}
-
-		@Override
-		public Value newOperation(AbstractInsnNode insn) {
-			Value v = super.newOperation(insn);
-			return def(insn, v);
-		}
-
-		@Override
-		public Value ternaryOperation(AbstractInsnNode insn, Value value1,
-				Value value2, Value value3) throws AnalyzerException {
-			use.put(insn, new Value[]{value1,value2,value3});
-			Value v = super.ternaryOperation(insn, value1, value2, value3);
-			return def(insn, v);
-		}
-		
-		@Override
-		public Value unaryOperation(AbstractInsnNode insn, Value value)
-				throws AnalyzerException {
-			use.put(insn, new Value[]{value});
-			Value v = super.unaryOperation(insn, value);
-			return def(insn, v);
-		}
-		
-		private DefValue def(AbstractInsnNode insn, Value value) {
-			if(value == null) return new DefValue(insn, null); 
-			return new DefValue(insn, ((BasicValue)value).getType());
-		}
-		
-	}
+	private Map<AbstractInsnNode, Type> markForLaterUnbox = new HashMap<AbstractInsnNode, Type>();		
 	
 	public Transformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
 		super(new MyBasicInterpreter());
@@ -560,7 +502,8 @@ public class Transformer extends Analyzer implements Opcodes {
 		BinOp op=null;
 		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
 		if(op == null) return false;
-		// TODO check type from "frame"		
+		// TODO check type from "frame"
+		System.out.println("frame: " + frame);
 		int oldIndex = units.indexOf(s);
 		if(s.getPrevious().getOpcode()==LLOAD) System.out.println(">> Found it !!");
 		Value v2 = frame.getStack(frame.getStackSize()-1); // peek

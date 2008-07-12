@@ -12,5 +12,21 @@ public class DefValue extends BasicValue {
 		super(type);
 		this.source = insn;
 	}
+
+	@Override
+	public String toString() {
+        if (this == UNINITIALIZED_VALUE) {
+            return ".";
+        } else if (this.getType() == ((BasicValue)RETURNADDRESS_VALUE).getType()) {
+            return "A";
+        } else if (this.getType() == ((BasicValue)REFERENCE_VALUE).getType()) {
+            return "R";
+        } else {
+            return getType().getDescriptor();
+        }
+	}
+	
+	
+	
 	
 }
