@@ -70,18 +70,13 @@ public class BasicVerifier extends BasicInterpreter {
                 break;
             case ALOAD:
                 if (!((BasicValue) value).isReference()) {
-                    throw new AnalyzerException(null,
-                            "an object reference",
-                            value);
+                    throw new AnalyzerException(null,"an object reference",value);
                 }
                 return value;
             case ASTORE:
                 if (!((BasicValue) value).isReference()
-                        && value != BasicValue.RETURNADDRESS_VALUE)
-                {
-                    throw new AnalyzerException(null,
-                            "an object reference or a return address",
-                            value);
+                        && value != BasicValue.RETURNADDRESS_VALUE) {
+                    throw new AnalyzerException(null,"an object reference or a return address",value);
                 }
                 return value;
             default:
@@ -390,9 +385,7 @@ public class BasicVerifier extends BasicInterpreter {
             if (opcode != INVOKESTATIC) {
                 Type owner = Type.getObjectType(((MethodInsnNode) insn).owner);
                 if (!isSubTypeOf((Value) values.get(i++), newValue(owner))) {
-                    throw new AnalyzerException("Method owner",
-                            newValue(owner),
-                            (Value) values.get(0));
+                    throw new AnalyzerException("Method owner",newValue(owner),(Value) values.get(0));
                 }
             }
             Type[] args = Type.getArgumentTypes(((MethodInsnNode) insn).desc);
@@ -400,9 +393,9 @@ public class BasicVerifier extends BasicInterpreter {
                 Value expected = newValue(args[j++]);
                 Value encountered = (Value) values.get(i++);
                 if (!isSubTypeOf(encountered, expected)) {
-                    throw new AnalyzerException("Argument " + j,
-                            expected,
-                            encountered);
+                	System.out.print(((MethodInsnNode) insn).name);
+                	System.out.println(((MethodInsnNode) insn).desc);
+                    throw new AnalyzerException("Argument " + j,expected,encountered);
                 }
             }
         }
@@ -420,6 +413,6 @@ public class BasicVerifier extends BasicInterpreter {
     }
 
     protected boolean isSubTypeOf(final Value value, final Value expected) {
-        return value == expected;
+        return ((BasicValue)value).getType() == ((BasicValue)expected).getType();
     }
 }
