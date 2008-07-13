@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.Map;
 
+import org.codehaus.groovy.gjit.v2.NewTransformer;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -43,7 +44,7 @@ public class Optimiser extends ClassAdapter {
 			try {
 				System.out.println("method name: " + name + desc);
 				//if(name.equals("bottomUpTree") || name.equals("itemCheck")) { 
-				new Transformer(owner, mn, pack, siteNames).transform();
+				new NewTransformer(owner, mn, pack, siteNames).transform();
 			} catch (Throwable e) {
 				e.printStackTrace();
 			}

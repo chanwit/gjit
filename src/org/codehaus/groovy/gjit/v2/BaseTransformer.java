@@ -1,8 +1,9 @@
-package org.codehaus.groovy.gjit;
+package org.codehaus.groovy.gjit.v2;
 
 import java.util.ListIterator;
 import java.util.Map;
 
+import org.codehaus.groovy.gjit.MyBasicInterpreter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -14,16 +15,18 @@ import org.objectweb.asm.tree.analysis.Value;
 
 public class BaseTransformer extends Analyzer implements Opcodes {
 
-	private String owner;
+	private String owner;	
+	private MyBasicInterpreter interpreter;
 	
-	private MethodNode node;
-	private InsnList units;
-	
+	protected MethodNode node;
+	protected InsnList units;
 	protected Map<AbstractInsnNode, Value[]> use;
 	protected int callSiteVar;
+	protected Map<AbstractInsnNode, Frame> frames;
 	
-	public BaseTransformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
-		super(new MyBasicInterpreter());		
+	public BaseTransformer(MyBasicInterpreter interpreter, String owner, MethodNode mn) {
+		super(interpreter);		
+		this.interpreter = interpreter;
 		this.owner = owner;
 		this.node = mn;
 		this.units = node.instructions;
@@ -31,8 +34,8 @@ public class BaseTransformer extends Analyzer implements Opcodes {
 	
 	public void transform() throws AnalyzerException {
 		preTransform();
-		this.analyze(this.owner, this.node);
-		this.use = ((MyBasicInterpreter)this.interpreter).use;
+		frames = this.analyze(this.owner, this.node);
+		this.use = interpreter.use;
 	}	
 		
 	private enum Phase {

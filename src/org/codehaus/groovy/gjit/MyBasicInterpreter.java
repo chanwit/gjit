@@ -4,15 +4,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.groovy.gjit.v2.SimpleVerifier;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Value;
 
-public class MyBasicInterpreter extends BasicInterpreter {
+public class MyBasicInterpreter extends SimpleVerifier {
 
-	final Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
+	public final Map<AbstractInsnNode, Value[]> use = new HashMap<AbstractInsnNode, Value[]>();
 			
 	@Override
 	public Value binaryOperation(AbstractInsnNode insn, Value value1,
