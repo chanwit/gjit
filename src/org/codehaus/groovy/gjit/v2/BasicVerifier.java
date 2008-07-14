@@ -410,6 +410,7 @@ public class BasicVerifier extends BasicInterpreter {
             while (i < values.size()) {
                 Value expected = newValue(args[j++]);
                 Value encountered = (Value) values.get(i++);
+                System.out.println(">>>>>>" + i + ": in basic verifier: " + encountered);
                 if (!isSubTypeOf(encountered, expected)) {
                 	// System.out.print(((MethodInsnNode) insn).name);
                 	// System.out.println(((MethodInsnNode) insn).desc);

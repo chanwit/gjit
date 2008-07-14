@@ -6,7 +6,7 @@ import org.objectweb.asm.tree.analysis.BasicValue;
 
 public class DefValue extends BasicValue {
 
-	final AbstractInsnNode source;
+	public final AbstractInsnNode source;
 
 	public DefValue(AbstractInsnNode insn, Type type) {
 		super(type);
