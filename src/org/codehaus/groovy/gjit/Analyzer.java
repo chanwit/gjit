@@ -47,8 +47,6 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Interpreter;
-import org.objectweb.asm.util.AbstractVisitor;
 
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
@@ -63,7 +61,7 @@ public class Analyzer implements Opcodes {
 
     private InsnList insns;
 
-    private Map<AbstractInsnNode, List> handlers = new HashMap<AbstractInsnNode, List>();
+    private Map<AbstractInsnNode, List<TryCatchBlockNode>> handlers = new HashMap<AbstractInsnNode, List<TryCatchBlockNode>>();
     private Map<AbstractInsnNode, Frame> frames = new HashMap<AbstractInsnNode, Frame>();
     private Map<AbstractInsnNode, Subroutine> subroutines = new HashMap<AbstractInsnNode, Subroutine>();
     private Map<AbstractInsnNode, Boolean> queued = new HashMap<AbstractInsnNode, Boolean>();
@@ -99,16 +97,18 @@ public class Analyzer implements Opcodes {
      *         instruction cannot be reached (dead code).
      * @throws AnalyzerException if a problem occurs during the analysis.
      */
+    
+    private final static Map<AbstractInsnNode, Frame> EMPTY_FRAMES =  new HashMap<AbstractInsnNode, Frame>();
+    
     public Map<AbstractInsnNode, Frame> analyze(final String owner, final MethodNode m)
             throws AnalyzerException
     {
         if ((m.access & (ACC_ABSTRACT | ACC_NATIVE)) != 0) {
-            // frames = new Frame[0];
-            return new HashMap<AbstractInsnNode, Frame>();
+            return EMPTY_FRAMES;
         }
         insns = m.instructions;
         if(insns.size() == 0) {
-        	return new HashMap<AbstractInsnNode, Frame>();
+        	return EMPTY_FRAMES;
         }
         top = insns.get(0);
 
@@ -119,9 +119,9 @@ public class Analyzer implements Opcodes {
             int end = insns.indexOf(tcb.end);
             for (int j = begin; j < end; ++j) {
             	AbstractInsnNode jth = insns.get(j);
-                List insnHandlers = handlers.get(jth);
+                List<TryCatchBlockNode> insnHandlers = handlers.get(jth);
                 if (insnHandlers == null) {
-                    insnHandlers = new ArrayList();
+                    insnHandlers = new ArrayList<TryCatchBlockNode>();
                     handlers.put(jth, insnHandlers);
                 }
                 insnHandlers.add(tcb);
@@ -130,12 +130,12 @@ public class Analyzer implements Opcodes {
 
         // computes the subroutine for each instruction:
         Subroutine main = new Subroutine(null, m.maxLocals, null);
-        List subroutineCalls = new ArrayList();
-        Map subroutineHeads = new HashMap();
+        List<AbstractInsnNode> subroutineCalls = new ArrayList<AbstractInsnNode>();
+        Map<LabelNode, Subroutine> subroutineHeads = new HashMap<LabelNode, Subroutine>();
         findSubroutine(top, main, subroutineCalls);
         while (!subroutineCalls.isEmpty()) {
             JumpInsnNode jsr = (JumpInsnNode) subroutineCalls.remove(0);
-            Subroutine sub = (Subroutine) subroutineHeads.get(jsr.label);
+            Subroutine sub = subroutineHeads.get(jsr.label);
             if (sub == null) {
                 sub = new Subroutine(jsr.label, m.maxLocals, jsr);
                 subroutineHeads.put(jsr.label, sub);
@@ -152,8 +152,6 @@ public class Analyzer implements Opcodes {
         }
 
         // initializes the data structures for the control flow analysis
-//        System.out.println("maxLocals: " + m.maxLocals);
-//        System.out.println("maxStack: " + m.maxStack);
         Frame current = newFrame(m.maxLocals, m.maxStack);
         Frame handler = newFrame(m.maxLocals, m.maxStack);
         Type[] args = Type.getArgumentTypes(m.desc);
@@ -194,7 +192,7 @@ public class Analyzer implements Opcodes {
         			subroutine = subroutines.get(insn);
         			queued.put(insn, Boolean.FALSE);	            			
             		
-	            	Action action = process(insns, frames, insn);
+	            	Action action = preprocess(insns, frames, insn);
 	            	switch(action) {
 	            		case REPLACE:  
 	            			insn = insns.get(oldIndex);
@@ -308,10 +306,10 @@ public class Analyzer implements Opcodes {
                     }
                 }
 
-                List insnHandlers = handlers.get(insn);
+                List<TryCatchBlockNode> insnHandlers = handlers.get(insn);
                 if (insnHandlers != null) {
                     for (int i = 0; i < insnHandlers.size(); ++i) {
-                        TryCatchBlockNode tcb = (TryCatchBlockNode) insnHandlers.get(i);
+                        TryCatchBlockNode tcb = insnHandlers.get(i);
                         Type type;
                         if (tcb.type == null) {
                             type = Type.getObjectType("java/lang/Throwable");
@@ -343,11 +341,11 @@ public class Analyzer implements Opcodes {
     protected void postProcess(final AbstractInsnNode insnNode, final Interpreter interpreter) {
 	}
 
-	public Action process(InsnList units, Map<AbstractInsnNode, Frame> frames2, AbstractInsnNode insn) {    	
+	public Action preprocess(InsnList units, Map<AbstractInsnNode, Frame> frames2, AbstractInsnNode insn) {    	
 		return Action.NONE;
 	}
 
-	private void findSubroutine(AbstractInsnNode insn, final Subroutine sub, final List calls)
+	private void findSubroutine(AbstractInsnNode insn, final Subroutine sub, final List<AbstractInsnNode> calls)
             throws AnalyzerException
     {
         while (true) {
@@ -386,10 +384,10 @@ public class Analyzer implements Opcodes {
             }
 
             // calls findSubroutine recursively on exception handler successors
-            List insnHandlers = handlers.get(insn);
+            List<TryCatchBlockNode> insnHandlers = handlers.get(insn);
             if (insnHandlers != null) {
                 for (int i = 0; i < insnHandlers.size(); ++i) {
-                    TryCatchBlockNode tcb = (TryCatchBlockNode) insnHandlers.get(i);
+                    TryCatchBlockNode tcb = insnHandlers.get(i);
                     findSubroutine(tcb.handler, sub, calls);
                 }
             }
@@ -435,7 +433,7 @@ public class Analyzer implements Opcodes {
      *        method.
      * @return a list of {@link TryCatchBlockNode} objects.
      */
-    public List getHandlers(final AbstractInsnNode insn) {
+    public List<TryCatchBlockNode> getHandlers(final AbstractInsnNode insn) {
         return handlers.get(insn);
     }
 

@@ -4,10 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.groovy.gjit.v2.SimpleVerifier;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Value;
 
@@ -32,9 +30,9 @@ public class MyBasicInterpreter extends SimpleVerifier {
 	}
 
 	@Override
-	public Value naryOperation(AbstractInsnNode insn, List values)
+	public Value naryOperation(AbstractInsnNode insn, List<Value> values)
 			throws AnalyzerException {
-		use.put(insn, (Value[])values.toArray(new Value[values.size()]));
+		use.put(insn, values.toArray(new Value[values.size()]));
 		Value v = super.naryOperation(insn, values);
 		return def(insn, v);
 	}

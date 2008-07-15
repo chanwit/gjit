@@ -39,7 +39,9 @@ import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.objectweb.asm.tree.analysis.*;
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Value;
+
 
 /**
  * A symbolic execution stack frame. A stack frame contains a set of local
@@ -198,7 +200,7 @@ public class Frame {
         final Interpreter interpreter) throws AnalyzerException
     {
         Value value1, value2, value3, value4;
-        List values;
+        List<Value> values;
         int var;
 
         switch (insn.getOpcode()) {
@@ -554,7 +556,7 @@ public class Frame {
             case Opcodes.INVOKESPECIAL:
             case Opcodes.INVOKESTATIC:
             case Opcodes.INVOKEINTERFACE:
-                values = new ArrayList();
+                values = new ArrayList<Value>();
                 String desc = ((MethodInsnNode) insn).desc;
                 for (int i = Type.getArgumentTypes(desc).length; i > 0; --i) {
                     values.add(0, pop());
@@ -588,7 +590,7 @@ public class Frame {
                 interpreter.unaryOperation(insn, pop());
                 break;
             case Opcodes.MULTIANEWARRAY:
-                values = new ArrayList();
+                values = new ArrayList<Value>();
                 for (int i = ((MultiANewArrayInsnNode) insn).dims; i > 0; --i) {
                     values.add(0, pop());
                 }

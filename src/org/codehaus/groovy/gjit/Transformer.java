@@ -21,7 +21,6 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.Interpreter;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
 
@@ -135,7 +134,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	}
 
 	@Override
-	public Action process(InsnList units, Map<AbstractInsnNode, Frame> frames, AbstractInsnNode s) {		
+	public Action preprocess(InsnList units, Map<AbstractInsnNode, Frame> frames, AbstractInsnNode s) {		
 		Frame frame = frames.get(s);
 //		 System.out.println(frame);
 //		 System.out.println("index: " + units.indexOf(s));

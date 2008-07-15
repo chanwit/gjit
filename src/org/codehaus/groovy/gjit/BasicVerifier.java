@@ -380,7 +380,7 @@ public class BasicVerifier extends BasicInterpreter {
         return null;
     }
 
-    public Value naryOperation(final AbstractInsnNode insn, final List values)
+    public Value naryOperation(final AbstractInsnNode insn, final List<Value> values)
             throws AnalyzerException
     {
         int opcode = insn.getOpcode();
@@ -388,8 +388,7 @@ public class BasicVerifier extends BasicInterpreter {
             for (int i = 0; i < values.size(); ++i) {
                 if (values.get(i) != BasicValue.INT_VALUE) {
                     throw new AnalyzerException(null,
-                            BasicValue.INT_VALUE,
-                            (Value) values.get(i));
+                            BasicValue.INT_VALUE, values.get(i));
                 }
             }
         } else {

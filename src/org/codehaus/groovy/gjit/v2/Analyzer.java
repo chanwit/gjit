@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.groovy.gjit.Transformer;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -63,7 +64,7 @@ public class Analyzer implements Opcodes {
 
     private InsnList insns;
 
-    private Map<AbstractInsnNode, List> handlers = new HashMap<AbstractInsnNode, List>();
+    private Map<AbstractInsnNode, List<TryCatchBlockNode>> handlers = new HashMap<AbstractInsnNode, List<TryCatchBlockNode>>();
     private Map<AbstractInsnNode, Frame> frames = new HashMap<AbstractInsnNode, Frame>();
     private Map<AbstractInsnNode, Subroutine> subroutines = new HashMap<AbstractInsnNode, Subroutine>();
     private Map<AbstractInsnNode, Boolean> queued = new HashMap<AbstractInsnNode, Boolean>();
@@ -119,9 +120,9 @@ public class Analyzer implements Opcodes {
             int end = insns.indexOf(tcb.end);
             for (int j = begin; j < end; ++j) {
             	AbstractInsnNode jth = insns.get(j);
-                List insnHandlers = handlers.get(jth);
+                List<TryCatchBlockNode> insnHandlers = handlers.get(jth);
                 if (insnHandlers == null) {
-                    insnHandlers = new ArrayList();
+                    insnHandlers = new ArrayList<TryCatchBlockNode>();
                     handlers.put(jth, insnHandlers);
                 }
                 insnHandlers.add(tcb);
@@ -308,10 +309,10 @@ public class Analyzer implements Opcodes {
                     }
                 }
 
-                List insnHandlers = handlers.get(insn);
+                List<TryCatchBlockNode> insnHandlers = handlers.get(insn);
                 if (insnHandlers != null) {
                     for (int i = 0; i < insnHandlers.size(); ++i) {
-                        TryCatchBlockNode tcb = (TryCatchBlockNode) insnHandlers.get(i);
+                        TryCatchBlockNode tcb = insnHandlers.get(i);
                         Type type;
                         if (tcb.type == null) {
                             type = Type.getObjectType("java/lang/Throwable");

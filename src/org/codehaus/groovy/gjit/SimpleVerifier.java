@@ -287,16 +287,4 @@ public class SimpleVerifier extends BasicVerifier {
         	return java.lang.Object.class;
         }
     }
-
-//	private Class<?> onlyWrapper(Type t) {
-////		if(t.getClassName().equals("java/lang/Integer")) return java.lang.Integer.class;
-////		if(t.getClassName().equals("java/lang/Long")) return java.lang.Long.class;
-////		if(t.getClassName().equals("java/lang/Float")) return java.lang.Float.class;
-////		if(t.getClassName().equals("java/lang/Double")) return java.lang.Double.class;
-////		if(t.getClassName().equals("java/lang/Byte")) return java.lang.Byte.class;
-////		if(t.getClassName().equals("java/lang/Short")) return java.lang.Short.class;
-////		if(t.getClassName().equals("java/lang/Character")) return java.lang.Character.class;
-////		if(t.getClassName().equals("java/lang/Boolean")) return java.lang.Boolean.class;
-////		return java.lang.Object.class;
-//	}
 }
