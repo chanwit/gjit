@@ -228,10 +228,10 @@ public class Analyzer implements Opcodes {
                     newControlFlowEdge(insn, insn.getNext());
                 } else {
                     // DEBUG INFO
-                    System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+                    // System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
                 	
                     current.init(f).execute(insnNode, interpreter);
-                    postProcess(insnNode, interpreter);
+                    // postProcess(insnNode, interpreter);
                     subroutine = subroutine == null ? null : subroutine.copy();
 
                     if (insnNode instanceof JumpInsnNode) {

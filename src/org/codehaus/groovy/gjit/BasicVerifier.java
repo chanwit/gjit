@@ -37,6 +37,8 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.analysis.*;
+import org.objectweb.asm.tree.analysis.Value;
+import org.objectweb.asm.tree.analysis.BasicValue;
 
 /**
  * An extended {@link BasicInterpreter} that checks that bytecode instructions
