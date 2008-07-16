@@ -25,7 +25,7 @@ import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
 
 
-public class Transformer extends Analyzer implements Opcodes {
+public class OldTransformer extends Analyzer implements Opcodes {
 
 	private static final String SCRIPT_BYTECODE_ADAPTER = "org/codehaus/groovy/runtime/ScriptBytecodeAdapter";
 	private static final String CALL_SITE_INTERFACE = "org/codehaus/groovy/runtime/callsite/CallSite";
@@ -62,7 +62,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	private Map<AbstractInsnNode, Type> markForLaterBox = new HashMap<AbstractInsnNode, Type>();
 	private Map<AbstractInsnNode, Type> markForLaterUnbox = new HashMap<AbstractInsnNode, Type>();		
 	
-	public Transformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
+	public OldTransformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
 		super(new MyBasicInterpreter());
 		this.owner = owner;
 		this.node = mn;
@@ -134,7 +134,7 @@ public class Transformer extends Analyzer implements Opcodes {
 	}
 
 	@Override
-	public Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {		
+	public Action preprocess(InsnList units, Map<AbstractInsnNode, Frame> frames, AbstractInsnNode s) {		
 		Frame frame = frames.get(s);
 //		 System.out.println(frame);
 //		 System.out.println("index: " + units.indexOf(s));

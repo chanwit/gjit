@@ -58,7 +58,7 @@ public class SimpleVerifier extends BasicVerifier {
     /**
      * The interfaces implemented by the class that is verified.
      */
-    private final List currentClassInterfaces;
+    private final List<Type> currentClassInterfaces;
 
     /**
      * If the class that is verified is an interface.
@@ -101,7 +101,7 @@ public class SimpleVerifier extends BasicVerifier {
     public SimpleVerifier(
         final Type currentClass,
         final Type currentSuperClass,
-        final List currentClassInterfaces,
+        final List<Type> currentClassInterfaces,
         final boolean isInterface)
     {
         this.currentClass = currentClass;
@@ -240,7 +240,7 @@ public class SimpleVerifier extends BasicVerifier {
         if (currentClass != null && t.equals(currentClass)) {
             return currentSuperClass;
         }
-        Class c = getClass(t).getSuperclass();
+        Class<?> c = getClass(t).getSuperclass();
         return c == null ? null : Type.getType(c);
     }
 
@@ -272,7 +272,7 @@ public class SimpleVerifier extends BasicVerifier {
         return getClass(t).isAssignableFrom(getClass(u));
     }
 
-    protected Class getClass(final Type t) {
+    protected Class<?> getClass(final Type t) {
             if (t.getSort() == Type.ARRAY) {
             	try {
             		return Class.forName(t.getDescriptor().replace('/', '.'));

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -47,6 +48,7 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.util.AbstractVisitor;
 
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
@@ -97,6 +99,14 @@ public class Analyzer implements Opcodes {
      *         instruction cannot be reached (dead code).
      * @throws AnalyzerException if a problem occurs during the analysis.
      */
+    
+    private enum ExecutionState {
+    	NORMAL,
+    	HANDLED,
+    	HANDLING
+    }
+    
+    private ExecutionState state = ExecutionState.NORMAL;
     
     private final static Map<AbstractInsnNode, Frame> EMPTY_FRAMES =  new HashMap<AbstractInsnNode, Frame>();
     
@@ -170,12 +180,37 @@ public class Analyzer implements Opcodes {
             current.setLocal(local++, interpreter.newValue(null));
         }
         merge(top, current, null);
+        
+        AbstractInsnNode bookmarkNode = null;
+        AbstractInsnNode rollbackNode = null;
+        List<AbstractInsnNode> finished = new ArrayList<AbstractInsnNode>();
+        Map<AbstractInsnNode,AbstractInsnNode> saveTops = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 
-        // control flow analysis
+        // control flow analysis        
         while (top != null) {
-        	top = top.getPrevious();
-        	AbstractInsnNode insn = queue.get(top);
-        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+        	AbstractInsnNode insn=null;        	
+        	switch(state) {
+        		case NORMAL:
+        			saveTops.put(insn, top);
+        		case HANDLING:         			
+        			top = top.getPrevious();
+		        	insn = queue.get(top);		        	
+		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+		        	break;
+        		case HANDLED:
+        			//top = saveTop;
+		        	//insn = rollbackNode;
+        			top = saveTops.get(rollbackNode);
+        			insn = rollbackNode;
+        			for(int i=0;i<finished.size(); i++) {
+        				queued.put(finished.get(i), Boolean.TRUE);
+        			}
+        			finished.clear();
+		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+		        	rollbackNode = null;
+		        	state = ExecutionState.HANDLING;
+        			break;
+        	}
         	
         	Frame f = null;//frames.get(insn);
         	Subroutine subroutine = null; //subroutines.get(insn);
@@ -186,31 +221,38 @@ public class Analyzer implements Opcodes {
             	int oldIndex = insns.indexOf(insn);
             	// System.out.println(">> ORG F: at " + oldIndex + "]["+ f);            	
             	boolean done = false;
-            	while(done==false) {
-            		
+            	while(done==false) {            	
         			f = frames.get(insn);
         			subroutine = subroutines.get(insn);
-        			queued.put(insn, Boolean.FALSE);	            			
+        			queued.put(insn, Boolean.FALSE);
+        			finished.add(insn);
             		
-	            	Action action = preprocess(insns, frames, insn);
-	            	switch(action) {
-	            		case REPLACE:  
-	            			insn = insns.get(oldIndex);
-	            			// System.out.println(">> F: " + f);
-	            			frames.put(insn, f);
-	            			subroutines.put(insn, subroutine);
-	            			queued.put(insn, Boolean.FALSE);	            			
-	            			done = true; 
-	            			break;
-	            		case REMOVE:   
-	            			insn = insns.get(oldIndex);
-	            			frames.put(insn, f);
-	            			subroutines.put(insn, subroutine);
-	            			queued.put(insn, Boolean.FALSE);
-	            			continue;
-	            		default:
-	            			done = true;
-	            	}
+        			if(state == ExecutionState.NORMAL) {
+		     
+        				Action action = process(insn, frames);
+		            	
+		            	switch(action) {
+		            		case REPLACE:  
+		            			insn = insns.get(oldIndex);
+		            			// System.out.println(">> F: " + f);
+		            			frames.put(insn, f);
+		            			subroutines.put(insn, subroutine);
+		            			queued.put(insn, Boolean.FALSE);	            			
+		            			done = true; 
+		            			break;
+		            		case REMOVE:   
+		            			insn = insns.get(oldIndex);
+		            			frames.put(insn, f);
+		            			subroutines.put(insn, subroutine);
+		            			queued.put(insn, Boolean.FALSE);
+		            			continue;
+		            		default:
+		            			done = true;
+		            	}
+        			} else if(state == ExecutionState.HANDLING) {
+        				// executing only, pass through preprocessing
+        				done = true;
+        			}
             	}
                 AbstractInsnNode insnNode = insn; //m.instructions.get(insn); 
                 // System.out.println(insn + ":" + insnNode);
@@ -218,17 +260,27 @@ public class Analyzer implements Opcodes {
                 int insnOpcode = insnNode.getOpcode();
                 int insnType = insnNode.getType();
                 
-                if (insnType == AbstractInsnNode.LABEL
-                        || insnType == AbstractInsnNode.LINE
-                        || insnType == AbstractInsnNode.FRAME)
-                {
+                if(insnOpcode != -1) {
+                	System.out.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+                	System.out.println("Frame: " + f);
+                }
+                
+                if (insnType == AbstractInsnNode.LABEL || insnType == AbstractInsnNode.LINE || insnType == AbstractInsnNode.FRAME) {
                 	merge(insn.getNext(), f, subroutine);
                     newControlFlowEdge(insn, insn.getNext());
                 } else {
                     // DEBUG INFO
                     // System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-                	
+//                	if(state == ExecutionState.HANDLED) {
+//                		System.out.println(" still in handling");
+//                		System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+//                		System.err.println("index: " + insns.indexOf(insnNode));                		
+//                	}
+                    if(insn == bookmarkNode && state == ExecutionState.HANDLING) {
+                    	state = ExecutionState.NORMAL;
+                    }
                     current.init(f).execute(insnNode, interpreter);
+                    // state = ExecutionState.NORMAL;
                     // postProcess(insnNode, interpreter);
                     subroutine = subroutine == null ? null : subroutine.copy();
 
@@ -283,9 +335,7 @@ public class Analyzer implements Opcodes {
                                 newControlFlowEdge(insn, call.getNext());
                             }
                         }
-                    } else if (insnOpcode != ATHROW
-                            && (insnOpcode < IRETURN || insnOpcode > RETURN))
-                    {
+                    } else if (insnOpcode != ATHROW && (insnOpcode < IRETURN || insnOpcode > RETURN)) {
                         if (subroutine != null) {
                             if (insnNode instanceof VarInsnNode) {
                                 int var = ((VarInsnNode) insnNode).var;
@@ -326,22 +376,29 @@ public class Analyzer implements Opcodes {
                     }
                 }
             } catch (AnalyzerException e) {
-            	e.printStackTrace();
-                //throw new AnalyzerException("Error at instruction " + insn
-                //        + ": " + e.getMessage(), e);
+            	// e.printStackTrace();
+            	state = ExecutionState.HANDLED;            
+                rollbackNode = handle(insn, frames, e);
+                bookmarkNode = insn;
+                if(rollbackNode == null) { 
+                	throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
+                }
             } catch (Exception e) {
-                throw new AnalyzerException("Error at instruction " + insn
-                        + ": " + e.getMessage(), e);
+                throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
             }
         }
 
         return frames;
     }
 
-    protected void postProcess(final AbstractInsnNode insnNode, final Interpreter interpreter) {
+    protected AbstractInsnNode handle(AbstractInsnNode insn, Map<AbstractInsnNode, Frame> frames, AnalyzerException e) {
+		return null;
 	}
 
-	public Action preprocess(InsnList units, Map<AbstractInsnNode, Frame> frames2, AbstractInsnNode insn) {    	
+	protected void postprocess(final AbstractInsnNode insnNode, final Interpreter interpreter) {
+	}
+
+	protected Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {    	
 		return Action.NONE;
 	}
 
