@@ -16,17 +16,24 @@ import org.objectweb.asm.tree.analysis.Value;
 public class BaseTransformer extends Analyzer implements Opcodes {
 
 	private String owner;	
-	private Interpreter interpreter;
+	//private Interpreter interpreter;
 	
 	protected MethodNode node;
 	protected InsnList units;
 	protected Map<AbstractInsnNode, Value[]> use;
 	protected int callSiteVar;
 	protected Map<AbstractInsnNode, Frame> frames;
+
+	public BaseTransformer(String owner, MethodNode mn) {
+		super();
+		this.owner = owner;
+		this.node = mn;
+		this.units = node.instructions;
+	}
 	
 	public BaseTransformer(Interpreter interpreter, String owner, MethodNode mn) {
 		super(interpreter);		
-		this.interpreter = interpreter;
+		//this.interpreter = interpreter;
 		this.owner = owner;
 		this.node = mn;
 		this.units = node.instructions;

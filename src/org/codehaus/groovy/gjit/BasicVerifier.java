@@ -73,14 +73,16 @@ public class BasicVerifier extends BasicInterpreter {
             case ALOAD:
                 if (!((BasicValue) value).isReference()) {
                 	printError("","an object reference",value);
-                    throw new AnalyzerException(null,"an object reference",value);
+                	boolean handled = handleCopyOperation(insn, value);
+                	if(handled==false) {
+                		throw new AnalyzerException(null,"an object reference or a return address",value);
+                	}
                 }
                 return value;
             case ASTORE:
-                if (!((BasicValue) value).isReference()
-                        && value != BasicValue.RETURNADDRESS_VALUE) {
+                if (!((BasicValue) value).isReference() && value != BasicValue.RETURNADDRESS_VALUE) {
                 	printError("","an object reference or a return address",value);
-                    throw new AnalyzerException(null,"an object reference or a return address",value);
+                	throw new AnalyzerException(null,"an object reference or a return address",value);
                 }
                 return value;
             default:
@@ -89,13 +91,16 @@ public class BasicVerifier extends BasicInterpreter {
         // type is necessarily a primitive type here,
         // so value must be == to expected value
         if (((BasicValue)value).getType().equals(((BasicValue)expected).getType())==false) {
-        	printError("", expected, value);
-            throw new AnalyzerException(null, expected, value);
+        	boolean handled = handleCopyOperation(insn, value);
+        	if(handled==false) {
+            	printError("", expected, value);
+                throw new AnalyzerException(null, expected, value);
+            }        	
         }
         return value;
     }
 
-    public Value unaryOperation(final AbstractInsnNode insn, final Value value)
+	public Value unaryOperation(final AbstractInsnNode insn, final Value value)
             throws AnalyzerException
     {
         Value expected;
@@ -179,13 +184,21 @@ public class BasicVerifier extends BasicInterpreter {
                 throw new Error("Internal error.");
         }
         if (!isSubTypeOf(value, expected)) {
-        	printError("", expected, value);
-            throw new AnalyzerException(null, expected, value);
+        	boolean handled = handleUnaryOperation(insn, value);
+        	if(handled == false) {
+	        	printError("", expected, value);
+	            throw new AnalyzerException(null, expected, value);
+        	}
         }
         return super.unaryOperation(insn, value);
     }
 
-    public Value binaryOperation(
+    protected boolean handleUnaryOperation(AbstractInsnNode insn, Value value) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public Value binaryOperation(
         final AbstractInsnNode insn,
         final Value value1,
         final Value value2) throws AnalyzerException
@@ -301,11 +314,17 @@ public class BasicVerifier extends BasicInterpreter {
                 throw new Error("Internal error.");
         }
         if (!isSubTypeOf(value1, expected1)) {
-        	printError("First argument", expected1, value1);
-            throw new AnalyzerException("First argument", expected1, value1);
+        	boolean handled = handleBinaryOperation(insn, 1, value1);
+        	if(handled == false) {
+	        	printError("First argument", expected1, value1);
+	            throw new AnalyzerException("First argument", expected1, value1);
+        	}
         } else if (!isSubTypeOf(value2, expected2)) {
-        	printError("Second argument", expected2, value2);
-            throw new AnalyzerException("Second argument", expected2, value2);
+        	boolean handled = handleBinaryOperation(insn, 1, value1);
+        	if(handled == false) {
+            	printError("Second argument", expected2, value2);
+                throw new AnalyzerException("Second argument", expected2, value2);        		
+        	}
         }
         if (insn.getOpcode() == AALOAD) {
             return getElementValue(value1);
@@ -314,7 +333,11 @@ public class BasicVerifier extends BasicInterpreter {
         }
     }
 
-    private void printError(String string, Object ex, Object v) {
+    protected boolean handleBinaryOperation(AbstractInsnNode insn, int i,Value value) {
+		return false;
+	}
+
+	private void printError(String string, Object ex, Object v) {
 		// System.err.println(">>>> ERROR >>>> " + string + ": expected " + ex + ", but found " + v);
 		// Thread.dumpStack();
 	}
@@ -374,13 +397,20 @@ public class BasicVerifier extends BasicInterpreter {
         	printError("Second argument", BasicValue.INT_VALUE, value2);
         	throw new AnalyzerException("Second argument", BasicValue.INT_VALUE, value2);
         } else if (!isSubTypeOf(value3, expected3)) {
-        	printError("Third argument", expected3, value3);
-        	throw new AnalyzerException("Third argument", expected3, value3);
+        	boolean handled = handleTernaryOperation(insn, 3, value3);
+        	if(handled==false) {
+	        	printError("Third argument", expected3, value3);
+	        	throw new AnalyzerException("Third argument", expected3, value3);
+        	}
         }
         return null;
     }
 
-    public Value naryOperation(final AbstractInsnNode insn, final List<Value> values)
+    protected boolean handleTernaryOperation(AbstractInsnNode insn, int i,Value value) {
+		return false;
+	}
+
+	public Value naryOperation(final AbstractInsnNode insn, final List<Value> values)
             throws AnalyzerException
     {
         int opcode = insn.getOpcode();
@@ -401,23 +431,34 @@ public class BasicVerifier extends BasicInterpreter {
                 }
             }
             Type[] args = Type.getArgumentTypes(((MethodInsnNode) insn).desc);
-            System.out.println("====");
+            //System.out.println("====");
             while (i < values.size()) {
                 Value expected = newValue(args[j++]);
                 Value encountered = (Value) values.get(i++);
-                System.out.println("expected: " + expected);
-                System.out.println("encounter: " + encountered);
+                //System.out.println("expected: " + expected);
+                //System.out.println("encounter: " + encountered);
                 if (!isSubTypeOf(encountered, expected)) {
-                	printError("Argument " + j,expected,encountered);
-                	throw new NaryOperationException(j, expected, encountered); 
-                	//AnalyzerException("Argument " + j, expected, encountered);
+                	//printError("Argument " + j,expected,encountered);
+                	System.out.println("going to be handle nary");
+                	boolean handled = handleNaryOperation(insn, j, expected, encountered);
+                	if(handled == false) {
+                		throw new AnalyzerException("Argument " + j, expected, encountered);
+                	}
                 }
             }
         }
         return super.naryOperation(insn, values);
     }
 
-    protected boolean isArrayValue(final Value value) {
+    protected boolean handleNaryOperation(AbstractInsnNode insn, int j, Value expected, Value encountered) {
+    	return false;
+	}
+    
+    protected boolean handleCopyOperation(AbstractInsnNode insn, Value value) {
+		return false;
+	}
+
+	protected boolean isArrayValue(final Value value) {
         return ((BasicValue) value).isReference();
     }
 
@@ -428,6 +469,7 @@ public class BasicVerifier extends BasicInterpreter {
     }
 
     protected boolean isSubTypeOf(final Value value, final Value expected) {
+    	if(((BasicValue)expected).getType().getDescriptor().equals("[Ljava/lang/Object;")) return true;
         return ((BasicValue)value).getType() == ((BasicValue)expected).getType();
     }
 }

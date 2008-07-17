@@ -59,7 +59,7 @@ import org.objectweb.asm.util.AbstractVisitor;
  */
 public class Analyzer implements Opcodes {
 
-    protected final Interpreter interpreter;
+    protected Interpreter interpreter;
 
     private InsnList insns;
 
@@ -78,6 +78,9 @@ public class Analyzer implements Opcodes {
      */
     public Analyzer(final Interpreter interpreter) {
         this.interpreter = interpreter;
+    }
+    
+    public Analyzer() {    	
     }
 
     public enum Action {
@@ -260,28 +263,18 @@ public class Analyzer implements Opcodes {
                 int insnOpcode = insnNode.getOpcode();
                 int insnType = insnNode.getType();
                 
-                if(insnOpcode != -1) {
-                	System.out.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-                	System.out.println("Frame: " + f);
-                }
+//                if(insnOpcode != -1) {
+//                	System.out.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+//                	System.out.println("Frame: " + f);
+//                }
                 
                 if (insnType == AbstractInsnNode.LABEL || insnType == AbstractInsnNode.LINE || insnType == AbstractInsnNode.FRAME) {
                 	merge(insn.getNext(), f, subroutine);
                     newControlFlowEdge(insn, insn.getNext());
                 } else {
-                    // DEBUG INFO
-                    // System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-//                	if(state == ExecutionState.HANDLED) {
-//                		System.out.println(" still in handling");
-//                		System.err.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-//                		System.err.println("index: " + insns.indexOf(insnNode));                		
-//                	}
-                    if(insn == bookmarkNode && state == ExecutionState.HANDLING) {
-                    	state = ExecutionState.NORMAL;
-                    }
+
                     current.init(f).execute(insnNode, interpreter);
-                    // state = ExecutionState.NORMAL;
-                    // postProcess(insnNode, interpreter);
+
                     subroutine = subroutine == null ? null : subroutine.copy();
 
                     if (insnNode instanceof JumpInsnNode) {
@@ -376,13 +369,12 @@ public class Analyzer implements Opcodes {
                     }
                 }
             } catch (AnalyzerException e) {
-            	// e.printStackTrace();
-            	state = ExecutionState.HANDLED;            
-                rollbackNode = handle(insn, frames, e);
-                bookmarkNode = insn;
-                if(rollbackNode == null) { 
+//            	state = ExecutionState.HANDLED;            
+//                rollbackNode = handle(insn, frames, e);
+//                bookmarkNode = insn;
+//                if(rollbackNode == null) { 
                 	throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
-                }
+//                }
             } catch (Exception e) {
                 throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
             }

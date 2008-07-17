@@ -13,7 +13,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
@@ -30,16 +29,99 @@ public class SecondTransformer extends BaseTransformer {
 	private static final String DEFAULT_TYPE_TRANSFORMATION = "org/codehaus/groovy/runtime/typehandling/DefaultTypeTransformation";	
 
 	public SecondTransformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
-		super(new MyBasicInterpreter(),owner, mn);
+		super(owner, mn);
 		this.pack = pack;
 		this.siteNames = siteNames;
 		this.localTypes = new int[mn.maxLocals];
+		this.interpreter = new FixableInterpreter();
 	}
+	
+	class FixableInterpreter extends MyBasicInterpreter {
 
-//	@Override
-//	public void transform() throws AnalyzerException {
-//		super.transform();
-//	}	
+		@Override
+		protected boolean handleNaryOperation(AbstractInsnNode insn, int j,Value expected, Value encountered) {
+			DefValue vs;
+			System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);
+			switch(insn.getOpcode()) {
+				case INVOKEINTERFACE:
+				case INVOKEVIRTUAL:				
+					System.out.print(((MethodInsnNode)insn).name);
+					System.out.println(((MethodInsnNode)insn).desc);
+					vs = (DefValue)use.get(insn)[j];
+	//				System.out.println(((DefValue)vs[((NaryOperationException)e).getIndex()]).getType().getDescriptor());
+	//				System.out.println(((DefValue)vs[((NaryOperationException)e).getIndex()]).source);
+					box(vs.source, vs.getType());
+					System.out.println("handle !!");
+					return true;
+				case INVOKESTATIC:
+					System.out.print(((MethodInsnNode)insn).name);
+					System.out.println(((MethodInsnNode)insn).desc);
+					vs = (DefValue)use.get(insn)[j-1];
+					box(vs.source, vs.getType());
+					return true;
+			}
+			return false;			
+		}
+
+		@Override
+		protected boolean handleCopyOperation(AbstractInsnNode insn, Value value) {
+			switch(insn.getOpcode()) {
+				case ILOAD:
+					System.out.println("copy to ILOAD");
+					unbox(insn, Type.INT_TYPE);
+					return true;
+			}
+			return false;
+		}
+
+		@Override
+		protected boolean handleBinaryOperation(AbstractInsnNode insn, int i,Value value) {
+			System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);
+			DefValue v;
+//			switch(insn.getOpcode()) {
+//				case ISUB: 
+//				case IADD:
+//					v = (DefValue)value;
+//					unbox(v.source, Type.INT_TYPE);
+//					return true;
+//				case IF_ICMPGT:
+//					v = (DefValue)value;
+//					unbox(v.source, Type.INT_TYPE);
+//					return true;
+//			}
+			return false;
+		}
+
+		@Override
+		protected boolean handleUnaryOperation(AbstractInsnNode insn,Value value) {
+			switch(insn.getOpcode()) {
+				case IRETURN:
+					System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);
+					DefValue v = (DefValue)value;
+					System.out.println(AbstractVisitor.OPCODES[v.source.getOpcode()]);
+					unbox(insn, Type.INT_TYPE);
+					return true;
+			}
+			return false;
+		}
+
+		@Override
+		protected boolean handleTernaryOperation(AbstractInsnNode insn, int i,
+				Value value) {
+			DefValue vs;
+			System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);			
+			System.out.println(value);			
+			switch(insn.getOpcode()) {
+				case AASTORE:
+					vs = (DefValue)value;
+					// System.out.println(AbstractVisitor.OPCODES[vs.source.getOpcode()]);
+					box(insn, vs.getType());
+					return true;
+			}
+			return false;
+		}
+		
+	}
 	
 	@Override
 	public Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {
@@ -49,32 +131,58 @@ public class SecondTransformer extends BaseTransformer {
 		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;		
 		if(unwrapBinaryPrimitiveCall(s, frames.get(s))) return Action.REPLACE;
 		if(unwrapCompare(s,frames.get(s))) return Action.REMOVE;
-		if(clearWrapperCast(s)) return Action.REMOVE;		
+		if(clearWrapperCast(s)) return Action.REMOVE;	
+		if(fixASTORE(s,frames.get(s))) return Action.REPLACE;
+		if(fixALOAD(s)) return Action.REPLACE;
 		return Action.NONE;
 	}
-	
-	
-	@Override
-	protected AbstractInsnNode handle(AbstractInsnNode insn, Map<AbstractInsnNode, Frame> frames, AnalyzerException e) {
-		System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);
-		switch(insn.getOpcode()) {
-			case INVOKEINTERFACE:
-			case INVOKEVIRTUAL:				
-				System.out.print(((MethodInsnNode)insn).name);
-				System.out.println(((MethodInsnNode)insn).desc);
-				int i = ((NaryOperationException)e).getIndex();
-				DefValue vs = (DefValue)use.get(insn)[i];
-//				System.out.println(((DefValue)vs[((NaryOperationException)e).getIndex()]).getType().getDescriptor());
-//				System.out.println(((DefValue)vs[((NaryOperationException)e).getIndex()]).source);
-				box(vs.source, vs.getType());
-				System.out.println("handle !!");
-				return vs.source;				
-//			case INVOKESTATIC:
-					
-		}
-		return null;
-	}
 		
+	private boolean fixASTORE(AbstractInsnNode s, Frame frame) {
+		if(s.getOpcode()!=ASTORE) return false;
+		BasicValue top = (BasicValue)frame.getStack(frame.getStackSize()-1);		
+		return fixASTORE(s, top.getType());
+	}
+	
+	private boolean fixASTORE(AbstractInsnNode s, Type type) {
+		if(type == null) return false;
+		VarInsnNode v = (VarInsnNode)s;
+		switch(type.getSort()) {
+			case Type.INT:		units.set(s, new VarInsnNode(ISTORE, v.var));
+								localTypes[v.var] = Type.INT;
+								break; 
+			case Type.LONG:		units.set(s, new VarInsnNode(LSTORE, v.var));
+								localTypes[v.var] = Type.LONG;
+								break;								
+			case Type.FLOAT:	units.set(s, new VarInsnNode(FSTORE, v.var));
+								localTypes[v.var] = Type.FLOAT;
+								break;
+			case Type.DOUBLE:	units.set(s, new VarInsnNode(DSTORE, v.var));
+								localTypes[v.var] = Type.DOUBLE;
+								break;
+			default:
+					return false;
+		}		
+		return true;
+	}	
+	
+	private boolean fixALOAD(AbstractInsnNode s) {
+		if(s.getOpcode()!=ALOAD) return false;
+		VarInsnNode v = (VarInsnNode)s;
+		switch(localTypes[v.var]) {
+			case Type.INT:		units.set(s, new VarInsnNode(ILOAD, v.var));
+								System.out.println("fix ALOAD" + v.var);
+								return true; 
+			case Type.LONG:		units.set(s, new VarInsnNode(LLOAD, v.var));
+								return true;
+			case Type.FLOAT:	units.set(s, new VarInsnNode(FLOAD, v.var));
+								return true;
+			case Type.DOUBLE:	units.set(s, new VarInsnNode(DLOAD, v.var));
+								return true;
+			default:
+				return false;
+		}		
+	}
+	
 	private void box(AbstractInsnNode source, Type t) {
 		String boxType=null;
 		String primType=null;
@@ -89,6 +197,34 @@ public class SecondTransformer extends BaseTransformer {
 		MethodInsnNode iv = new MethodInsnNode(INVOKESTATIC, boxType, "valueOf", "("+ primType +")L"+boxType+";");
 		if(source.getOpcode()==SWAP) source = source.getPrevious(); // work around for inserted SWAP,POP
 		units.insert(source, iv);		
+	}
+	
+	private void unbox(AbstractInsnNode s, Type t) {
+		String boxType=null;
+		String primType = null;
+		String primTypeName = null;
+		switch(t.getSort()) {
+			case Type.INT:  boxType = "java/lang/Integer";
+							primType = "I";
+							primTypeName = "int";
+							break;
+			case Type.LONG:  boxType = "java/lang/Long";
+							primType = "J";
+							primTypeName = "long";
+							break;
+			case Type.FLOAT:  boxType = "java/lang/Float";
+							primType = "F";
+							primTypeName = "float";
+							break;
+			case Type.DOUBLE:  boxType = "java/lang/Double";
+							primType = "D";
+							primTypeName = "double";
+							break;				
+		}
+		TypeInsnNode tnode = new TypeInsnNode(CHECKCAST, boxType);
+		MethodInsnNode iv = new MethodInsnNode(INVOKEVIRTUAL, boxType, primTypeName + "Value", "()" + primType);
+		units.insertBefore(s, tnode);
+		units.insert(tnode, iv);	
 	}
 
 	private boolean extractCallSiteName(AbstractInsnNode s) {
@@ -149,13 +285,31 @@ public class SecondTransformer extends BaseTransformer {
 		if(s.getOpcode() != GETSTATIC) return false;		
 		FieldInsnNode f = (FieldInsnNode)s;
 		if(f.name.startsWith("$const$")) {			
-			LdcInsnNode newS = new LdcInsnNode(pack.get(f.name));
+			Object constValue = pack.get(f.name);
+			LdcInsnNode newS = new LdcInsnNode(constValue);
+			AbstractInsnNode s1 = s.getNext();
 			units.set(s, newS);
+			if(s1.getOpcode()==ASTORE) {
+				Type type = Type.getType(constValue.getClass());				
+				fixASTORE(s1, getPrimitiveType(type));
+			}
 			return true;
 		}
 		return false;
 	}	
 	
+	private Type getPrimitiveType(Type type) {
+		return getPrimitiveType(type.getDescriptor());
+	}
+	
+	private Type getPrimitiveType(String desc) {
+		if(desc.equals("Ljava/lang/Integer;")) return Type.INT_TYPE;
+		if(desc.equals("Ljava/lang/Long;")) return Type.LONG_TYPE;
+		if(desc.equals("Ljava/lang/Float;")) return Type.FLOAT_TYPE;
+		if(desc.equals("Ljava/lang/Double;")) return Type.DOUBLE_TYPE;
+		return null;
+	}	
+
 	private enum BinOp {
 		minus,
 		plus,
@@ -232,9 +386,13 @@ public class SecondTransformer extends BaseTransformer {
 		if(s2.getOpcode() != CHECKCAST) return false;
 		TypeInsnNode t2 = (TypeInsnNode)s2;
 		if(t2.desc.startsWith("java/lang")==false) return false;
+		AbstractInsnNode s3 = s2.getNext();
 		units.remove(s);
 		units.remove(s1);
 		units.remove(s2);
+		if(s3.getOpcode()==ASTORE) {
+			fixASTORE(s1, getPrimitiveType(t2.desc));			
+		}
 		return true;
 	}
 	
