@@ -38,17 +38,25 @@ import java.util.concurrent.ExecutionException;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.util.AbstractVisitor;
+
+import com.sun.management.jmx.JMProperties;
 
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
@@ -191,29 +199,33 @@ public class Analyzer implements Opcodes {
 
         // control flow analysis        
         while (top != null) {
-        	AbstractInsnNode insn=null;        	
-        	switch(state) {
-        		case NORMAL:
-        			saveTops.put(insn, top);
-        		case HANDLING:         			
-        			top = top.getPrevious();
-		        	insn = queue.get(top);		        	
-		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
-		        	break;
-        		case HANDLED:
-        			//top = saveTop;
-		        	//insn = rollbackNode;
-        			top = saveTops.get(rollbackNode);
-        			insn = rollbackNode;
-        			for(int i=0;i<finished.size(); i++) {
-        				queued.put(finished.get(i), Boolean.TRUE);
-        			}
-        			finished.clear();
-		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
-		        	rollbackNode = null;
-		        	state = ExecutionState.HANDLING;
-        			break;
-        	}
+        	AbstractInsnNode insn=null;
+			top = top.getPrevious();
+        	insn = queue.get(top);		        	
+        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+        	
+//        	switch(state) {
+//        		case NORMAL:
+//        			saveTops.put(insn, top);
+//        		case HANDLING:         			
+//        			top = top.getPrevious();
+//		        	insn = queue.get(top);		        	
+//		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+//		        	break;
+//        		case HANDLED:
+//        			//top = saveTop;
+//		        	//insn = rollbackNode;
+//        			top = saveTops.get(rollbackNode);
+//        			insn = rollbackNode;
+//        			for(int i=0;i<finished.size(); i++) {
+//        				queued.put(finished.get(i), Boolean.TRUE);
+//        			}
+//        			finished.clear();
+//		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+//		        	rollbackNode = null;
+//		        	state = ExecutionState.HANDLING;
+//        			break;
+//        	}
         	
         	Frame f = null;//frames.get(insn);
         	Subroutine subroutine = null; //subroutines.get(insn);
@@ -230,43 +242,45 @@ public class Analyzer implements Opcodes {
         			queued.put(insn, Boolean.FALSE);
         			finished.add(insn);
             		
-        			if(state == ExecutionState.NORMAL) {
+//        			if(state == ExecutionState.NORMAL) {
 		     
-        				Action action = process(insn, frames);
-		            	
-		            	switch(action) {
-		            		case REPLACE:  
-		            			insn = insns.get(oldIndex);
-		            			// System.out.println(">> F: " + f);
-		            			frames.put(insn, f);
-		            			subroutines.put(insn, subroutine);
-		            			queued.put(insn, Boolean.FALSE);	            			
-		            			done = true; 
-		            			break;
-		            		case REMOVE:   
-		            			insn = insns.get(oldIndex);
-		            			frames.put(insn, f);
-		            			subroutines.put(insn, subroutine);
-		            			queued.put(insn, Boolean.FALSE);
-		            			continue;
-		            		default:
-		            			done = true;
-		            	}
-        			} else if(state == ExecutionState.HANDLING) {
-        				// executing only, pass through preprocessing
-        				done = true;
-        			}
+    				Action action = process(insn, frames);
+	            	
+	            	switch(action) {
+	            		case REPLACE:  
+	            			insn = insns.get(oldIndex);
+	            			// System.out.println(">> F: " + f);
+	            			frames.put(insn, f);
+	            			subroutines.put(insn, subroutine);
+	            			queued.put(insn, Boolean.FALSE);	            			
+	            			done = true; 
+	            			break;
+	            		case REMOVE:   
+	            			insn = insns.get(oldIndex);
+	            			frames.put(insn, f);
+	            			subroutines.put(insn, subroutine);
+	            			queued.put(insn, Boolean.FALSE);
+	            			continue;
+	            		default:
+	            			done = true;
+	            	}
+//        			} else if(state == ExecutionState.HANDLING) {
+//        				// executing only, pass through preprocessing
+//        				done = true;
+//        			}
             	}
-                AbstractInsnNode insnNode = insn; //m.instructions.get(insn); 
+                AbstractInsnNode insnNode = insn; 
+                // m.instructions.get(insn); 
                 // System.out.println(insn + ":" + insnNode);
                 
                 int insnOpcode = insnNode.getOpcode();
                 int insnType = insnNode.getType();
                 
-//                if(insnOpcode != -1) {
-//                	System.out.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-//                	System.out.println("Frame: " + f);
-//                }
+                if(insnOpcode != -1) {
+                	//System.out.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+                	// System.out.println("Frame: " + f);
+                	debug(insn);
+                }
                 
                 if (insnType == AbstractInsnNode.LABEL || insnType == AbstractInsnNode.LINE || insnType == AbstractInsnNode.FRAME) {
                 	merge(insn.getNext(), f, subroutine);
@@ -383,7 +397,52 @@ public class Analyzer implements Opcodes {
         return frames;
     }
 
-    protected AbstractInsnNode handle(AbstractInsnNode insn, Map<AbstractInsnNode, Frame> frames, AnalyzerException e) {
+    private void debug(AbstractInsnNode insn) {
+		int opcode = insn.getOpcode();
+		if(insn.getOpcode() != -1) System.out.print(":: " + AbstractVisitor.OPCODES[opcode]);
+		if(insn instanceof InsnNode) {
+			System.out.println();
+		} else if(insn instanceof IntInsnNode) {
+			int operand = ((IntInsnNode)insn).operand;
+			System.out.print(' ');			
+            System.out.println(opcode == Opcodes.NEWARRAY ? AbstractVisitor.TYPES[operand] : Integer.toString(operand));
+		} else if(insn instanceof VarInsnNode) {
+			int var = ((VarInsnNode)insn).var;
+			System.out.print(' ');			
+			System.out.println(var);			
+		} else if(insn instanceof TypeInsnNode) {
+			String desc = ((TypeInsnNode)insn).desc;
+			System.out.print(' ');
+			System.out.println(desc);
+		} else if(insn instanceof FieldInsnNode) {
+			System.out.print(' ');
+			System.out.print(((FieldInsnNode)insn).owner);
+			System.out.print('.');
+			System.out.print(((FieldInsnNode)insn).name);
+			System.out.print(" : ");
+			System.out.println(((FieldInsnNode)insn).desc);
+		} else if(insn instanceof MethodInsnNode){
+			System.out.print(' ');
+			System.out.print(((MethodInsnNode)insn).owner);
+			System.out.print('.');
+			System.out.print(((MethodInsnNode)insn).name);
+			System.out.println(((MethodInsnNode)insn).desc);
+		} else if(insn instanceof JumpInsnNode) {
+			System.out.print(' ');
+			System.out.println(((JumpInsnNode)insn).label.getLabel());			
+		} else if(insn instanceof LdcInsnNode) {
+			System.out.print(' ');
+			System.out.println(((LdcInsnNode)insn).cst);
+		} else if(insn instanceof IincInsnNode) {
+			System.out.print(' ');
+			System.out.print(((IincInsnNode)insn).var);
+			System.out.print(' ');
+			System.out.println(((IincInsnNode)insn).incr);
+		}
+		
+	}
+
+	protected AbstractInsnNode handle(AbstractInsnNode insn, Map<AbstractInsnNode, Frame> frames, AnalyzerException e) {
 		return null;
 	}
 

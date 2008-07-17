@@ -73,9 +73,11 @@ public class BasicVerifier extends BasicInterpreter {
             case ALOAD:
                 if (!((BasicValue) value).isReference()) {
                 	printError("","an object reference",value);
-                	boolean handled = handleCopyOperation(insn, value);
-                	if(handled==false) {
+                	Value handled = handleCopyOperation(insn, value);
+                	if(handled==null) {
                 		throw new AnalyzerException(null,"an object reference or a return address",value);
+                	} else {
+                		return handled;
                 	}
                 }
                 return value;
@@ -90,12 +92,16 @@ public class BasicVerifier extends BasicInterpreter {
         }
         // type is necessarily a primitive type here,
         // so value must be == to expected value
-        if (((BasicValue)value).getType().equals(((BasicValue)expected).getType())==false) {
-        	boolean handled = handleCopyOperation(insn, value);
-        	if(handled==false) {
+        System.out.println("debug " + value);
+        if (((BasicValue)value).getType() == null
+        	|| ((BasicValue)value).getType().equals(((BasicValue)expected).getType())==false) {
+        	Value handled = handleCopyOperation(insn, value);
+        	if(handled==null) {
             	printError("", expected, value);
                 throw new AnalyzerException(null, expected, value);
-            }        	
+            } else {
+            	return handled;
+            }
         }
         return value;
     }
@@ -152,9 +158,10 @@ public class BasicVerifier extends BasicInterpreter {
                 break;
             case CHECKCAST:
                 if (!((BasicValue) value).isReference()) {
-                    throw new AnalyzerException(null,
-                            "an object reference",
-                            value);
+                	boolean handled = handleUnaryOperation(insn, value);
+                	if(handled==false) {
+                		throw new AnalyzerException(null,"an object reference",value);
+                	}
                 }
                 return super.unaryOperation(insn, value);
             case ARRAYLENGTH:
@@ -439,7 +446,7 @@ public class BasicVerifier extends BasicInterpreter {
                 //System.out.println("encounter: " + encountered);
                 if (!isSubTypeOf(encountered, expected)) {
                 	//printError("Argument " + j,expected,encountered);
-                	System.out.println("going to be handle nary");
+                	// System.out.println("going to be handle nary");
                 	boolean handled = handleNaryOperation(insn, j, expected, encountered);
                 	if(handled == false) {
                 		throw new AnalyzerException("Argument " + j, expected, encountered);
@@ -454,9 +461,8 @@ public class BasicVerifier extends BasicInterpreter {
     	return false;
 	}
     
-    protected boolean handleCopyOperation(AbstractInsnNode insn, Value value) {
-		return false;
-	}
+    protected Value handleCopyOperation(AbstractInsnNode insn, Value value) {
+		return null;	}
 
 	protected boolean isArrayValue(final Value value) {
         return ((BasicValue) value).isReference();
@@ -468,7 +474,7 @@ public class BasicVerifier extends BasicInterpreter {
         return BasicValue.REFERENCE_VALUE;
     }
 
-    protected boolean isSubTypeOf(final Value value, final Value expected) {
+    protected boolean isSubTypeOf(final Value value, final Value expected) {    	
     	if(((BasicValue)expected).getType().getDescriptor().equals("[Ljava/lang/Object;")) return true;
         return ((BasicValue)value).getType() == ((BasicValue)expected).getType();
     }

@@ -173,6 +173,7 @@ public class SimpleVerifier extends BasicVerifier {
                 return type == expectedType;
             case Type.ARRAY:
             case Type.OBJECT:
+            	if (type == null) return true;
                 if ("Lnull;".equals(type.getDescriptor())) {
                     return true;
                 } else if (type.getSort() == Type.OBJECT

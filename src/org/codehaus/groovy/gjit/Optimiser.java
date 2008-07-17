@@ -43,6 +43,7 @@ public class Optimiser extends ClassAdapter {
 			try {
 				//System.out.println("method name: " + name + desc);
 				//if(name.equals("bottomUpTree") || name.equals("itemCheck")) 
+				if(name.equals("main"))
 				  new SecondTransformer(owner, mn, pack, siteNames).transform();
 			} catch (Throwable e) {
 				e.printStackTrace();
