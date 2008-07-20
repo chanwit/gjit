@@ -24,6 +24,8 @@ public class BaseTransformer extends Analyzer implements Opcodes {
 	protected int callSiteVar;
 	protected Map<AbstractInsnNode, Frame> frames;
 
+	protected boolean preTransformationOnly=false;
+
 	public BaseTransformer(String owner, MethodNode mn) {
 		super();
 		this.owner = owner;
@@ -43,7 +45,8 @@ public class BaseTransformer extends Analyzer implements Opcodes {
 		if(interpreter instanceof MyBasicInterpreter) {
 			this.use = ((MyBasicInterpreter)interpreter).use;
 		}
-		preTransform();
+		pretransform();
+		if(preTransformationOnly) return;
 		frames = this.analyze(this.owner, this.node);
 	}	
 		
@@ -65,7 +68,7 @@ public class BaseTransformer extends Analyzer implements Opcodes {
 	
 	private Phase phase = Phase.PHASE_CALLSITE;	
 	
-	private void preTransform() {
+	protected void pretransform() {
 		ListIterator<?> stmts = units.iterator();
 		while(stmts.hasNext()) {
 			AbstractInsnNode s = (AbstractInsnNode)stmts.next();

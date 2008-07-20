@@ -66,7 +66,7 @@ public class Optimiser extends ClassAdapter {
 	}
 
 	public static void main(String[] args) throws Throwable {
-		RandomAccessFile r = new RandomAccessFile(new File("C:\\groovy-ck1\\groovy\\my\\TreeNode.class"), "r");		
+		RandomAccessFile r = new RandomAccessFile(new File("C:\\groovy-ck1\\gjit\\subject\\TreeNode.class"), "r");		
 		byte[] bytes = new byte[(int) r.length()];
 		r.readFully(bytes);
 		ClassReader cr = new ClassReader(bytes);
@@ -78,8 +78,10 @@ public class Optimiser extends ClassAdapter {
 			Optimiser cv2 = new Optimiser(cw, cv.getMethods());
 			cr.accept(cv2, 0);
 			byte[] outBytes = cw.toByteArray();
-			new File("C:\\groovy-ck1\\groovy\\my\\out2\\TreeNode.class").delete();
-			RandomAccessFile ro = new RandomAccessFile(new File("C:\\groovy-ck1\\groovy\\my\\out2\\TreeNode.class"), "rw");
+			try {
+				new File("C:\\groovy-ck1\\gjit\\subject\\out\\TreeNode.class").delete();
+			} catch(Throwable e){}
+			RandomAccessFile ro = new RandomAccessFile(new File("C:\\groovy-ck1\\gjit\\subject\\out\\TreeNode.class"), "rw");
 			ro.write(outBytes);
 			ro.close();
 		}

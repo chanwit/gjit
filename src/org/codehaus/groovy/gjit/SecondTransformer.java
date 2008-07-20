@@ -1,6 +1,12 @@
 package org.codehaus.groovy.gjit;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.Map.Entry;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -24,6 +30,9 @@ public class SecondTransformer extends BaseTransformer {
 	private String[] siteNames;
 	private int[] localTypes;
 	private Integer currentSiteIndex;
+	private Stack<Integer> callSiteIndexStack = new Stack<Integer>();
+	private Map<Integer, AbstractInsnNode> callSiteInsnLocations = new HashMap<Integer, AbstractInsnNode>();
+	private List<Integer> unusedCallSites = new ArrayList<Integer>();
 	
 	private static final String SCRIPT_BYTECODE_ADAPTER = "org/codehaus/groovy/runtime/ScriptBytecodeAdapter";
 	private static final String CALL_SITE_INTERFACE = "org/codehaus/groovy/runtime/callsite/CallSite";
@@ -110,22 +119,22 @@ public class SecondTransformer extends BaseTransformer {
 			return false;
 		}
 
-		@Override
-		protected boolean handleUnaryOperation(AbstractInsnNode insn,Value value) {
-			System.out.println("!-> handleUnaryOperation");			
-			switch(insn.getOpcode()) {
-				case IRETURN:
-					System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);
-					DefValue v = (DefValue)value;
-					System.out.println(AbstractVisitor.OPCODES[v.source.getOpcode()]);
-					unbox(insn, Type.INT_TYPE);
-					return true;
-				case CHECKCAST: 
-					if(((BasicValue)value).getType()==null)
-					return true;
-			}
-			return false;
-		}
+//		@Override
+//		protected boolean handleUnaryOperation(AbstractInsnNode insn,Value value) {
+//			System.out.println("!-> handleUnaryOperation");			
+//			switch(insn.getOpcode()) {
+//				case IRETURN:
+//					System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);
+//					DefValue v = (DefValue)value;
+//					System.out.println(AbstractVisitor.OPCODES[v.source.getOpcode()]);
+//					unbox(insn, Type.INT_TYPE);
+//					return true;
+//				case CHECKCAST: 
+//					if(((BasicValue)value).getType()==null)
+//					return true;
+//			}
+//			return false;
+//		}
 
 		@Override
 		protected boolean handleTernaryOperation(AbstractInsnNode insn, int i, Value value) {
@@ -134,11 +143,11 @@ public class SecondTransformer extends BaseTransformer {
 			System.out.println(AbstractVisitor.OPCODES[insn.getOpcode()]);			
 			System.out.println(value);			
 			switch(insn.getOpcode()) {
-				case AASTORE:
-					vs = (DefValue)value;
-					// System.out.println(AbstractVisitor.OPCODES[vs.source.getOpcode()]);
-					box(vs.source, vs.getType());
-					return true;
+//				case AASTORE:
+//					vs = (DefValue)value;
+//					// System.out.println(AbstractVisitor.OPCODES[vs.source.getOpcode()]);
+//					box(vs.source, vs.getType());
+//					return true;
 			}
 			return false;
 		}
@@ -146,30 +155,124 @@ public class SecondTransformer extends BaseTransformer {
 	}
 	
 	@Override
+	protected void pretransform() {
+		preTransformationOnly = true;
+		super.pretransform();
+		int i = -1;
+		while(true) {
+			i++;
+			if(i>=units.size()) break;
+			AbstractInsnNode s = units.get(i);
+			if(extractCallSiteName(s)) continue;
+			recordUnusedCallSite(s);
+			if(eliminateBoxCastUnbox(s)) continue;
+			if(unwrapConst(s)) continue;
+			if(unwrapBoxOrUnbox(s)) continue;
+			if(clearWrapperCast(s)) continue;	
+			if(fixALOAD(s)) continue;
+			if(fixASTORE(s)) continue;
+			if(fixHasNext(s)) continue;			
+			if(fixAASTORE(s)) continue;
+			
+		}
+		System.out.println("===== pre-transformed");
+		removeUnusedCallSite();
+	}
+
+	private void removeUnusedCallSite() {
+		//Set<Entry<Integer, AbstractInsnNode>> set = unusedCallSites.entrySet();
+		for(Integer index: unusedCallSites) {
+			AbstractInsnNode s = callSiteInsnLocations.get(index);
+			AbstractInsnNode s1 = s.getNext();    // LDC
+			AbstractInsnNode s2 = s1.getNext();   // AALOAD
+			System.out.println(">>>> ===");
+			System.out.println(index);
+			System.out.println(siteNames[index]);
+			System.out.println(AbstractVisitor.OPCODES[s.getOpcode()]);
+			System.out.println(AbstractVisitor.OPCODES[s1.getOpcode()]);
+			System.out.println(AbstractVisitor.OPCODES[s2.getOpcode()]);
+			units.remove(s);
+			units.remove(s1);
+			units.remove(s2);			
+		}
+	}
+
+	private void recordUnusedCallSite(AbstractInsnNode s) {
+		if(s.getOpcode()!=INVOKEINTERFACE) return;
+		MethodInsnNode iv = (MethodInsnNode)s;
+		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return;
+		if(iv.name.equals("call") == false) return;		
+		currentSiteIndex = callSiteIndexStack.pop();
+		if(isBinOpPrimitiveCall(s)==true) {
+			unusedCallSites.add(currentSiteIndex);
+		}
+	}
+
+	private boolean fixAASTORE(AbstractInsnNode s) {
+		if(s.getOpcode()!=AASTORE) return false;
+		AbstractInsnNode p = s.getPrevious();
+		switch(p.getOpcode()) {
+			case ILOAD: box(p, Type.INT_TYPE); break;
+			case LLOAD: box(p, Type.LONG_TYPE); break;
+			case FLOAD: box(p, Type.FLOAT_TYPE); break;
+			case DLOAD: box(p, Type.DOUBLE_TYPE); break;				
+		}
+		return true;
+	}
+
+	@Override
 	public Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {
-		if(extractCallSiteName(s)) return Action.NONE;
-		if(eliminateBoxCastUnbox(s)) return Action.REMOVE;
-		if(unwrapConst(s)) return Action.REPLACE;
-		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;		
-		if(unwrapBinaryPrimitiveCall(s, frames.get(s))) return Action.REPLACE;
-		if(unwrapCompare(s,frames.get(s))) return Action.REMOVE;
-		if(clearWrapperCast(s)) return Action.REMOVE;	
-		if(fixASTORE(s,frames.get(s))) return Action.REPLACE;
-		if(fixALOAD(s)) return Action.REPLACE;
+//		if(extractCallSiteName(s)) return Action.NONE;
+//		if(eliminateBoxCastUnbox(s)) return Action.REMOVE;
+//		if(unwrapConst(s)) return Action.REPLACE;
+//		if(unwrapBoxOrUnbox(s)) return Action.REMOVE;		
+//		if(unwrapBinaryPrimitiveCall(s, frames.get(s))) return Action.REPLACE;
+//		if(unwrapCompare(s,frames.get(s))) return Action.REMOVE;
+//		if(clearWrapperCast(s)) return Action.REMOVE;	
+//		if(fixASTORE(s,frames.get(s))) return Action.REPLACE;
+//		if(fixALOAD(s)) return Action.REPLACE;
+//		if(fixHasNext(s)) return Action.REPLACE; // workaround ASM verifier
 		//if(fixAASTORE(s,frames.get(s))) return Action.ADD;
 		return Action.NONE;
 	}
 		
+	private boolean fixHasNext(AbstractInsnNode s) {
+		if(s.getOpcode()!=INVOKEINTERFACE) return false;
+		MethodInsnNode m = ((MethodInsnNode)s);
+		//mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Iterator", "hasNext", "()Z");
+		if(m.owner.equals("java/util/Iterator") && s.getPrevious().getOpcode() != CHECKCAST) {
+			units.insertBefore(s, new TypeInsnNode(CHECKCAST, m.owner));
+			return true;
+		}
+		return false;
+	}
+	
+
 	private boolean fixASTORE(AbstractInsnNode s, Frame frame) {
 		if(s.getOpcode()!=ASTORE) return false;
 		BasicValue top = (BasicValue)frame.getStack(frame.getStackSize()-1);		
 		return fixASTORE(s, top.getType());
 	}
 	
-	private boolean fixASTORE(AbstractInsnNode s, Type type) {
-		if(type == null) return false;
+	private boolean fixASTORE(AbstractInsnNode s) {
+		if(s.getOpcode()!=ASTORE) return false;		
+		int sort = localTypes[((VarInsnNode)s).var];
+		if(sort!=0) { // special case, done fixing before
+			return fixASTORE(s, sort);
+		}
+		AbstractInsnNode p = s.getPrevious();
+		switch(p.getOpcode()) {
+			case ILOAD: return fixASTORE(s, Type.INT_TYPE);
+			case LLOAD: return fixASTORE(s, Type.LONG_TYPE);
+			case FLOAD: return fixASTORE(s, Type.FLOAT_TYPE);
+			case DLOAD: return fixASTORE(s, Type.DOUBLE_TYPE);
+		}
+		return false;
+	}	
+	
+	private boolean fixASTORE(AbstractInsnNode s, int sort) {
 		VarInsnNode v = (VarInsnNode)s;
-		switch(type.getSort()) {
+		switch(sort) {
 			case Type.INT:		units.set(s, new VarInsnNode(ISTORE, v.var));
 								System.out.print(">> fix ASTORE " + v.var);
 								System.out.println(" to ISTORE " + v.var);
@@ -191,6 +294,12 @@ public class SecondTransformer extends BaseTransformer {
 					return false;
 		}		
 		return true;
+	}
+
+	private boolean fixASTORE(AbstractInsnNode s, Type type) {
+		if(type == null) return false;
+		VarInsnNode v = (VarInsnNode)s;
+		return fixASTORE(s, type.getSort());
 	}	
 	
 	private boolean fixALOAD(AbstractInsnNode s) {
@@ -216,12 +325,18 @@ public class SecondTransformer extends BaseTransformer {
 		String boxType=null;
 		String primType=null;
 		switch(t.getSort()) {			
-		case Type.INT: boxType = "java/lang/Integer";
-					   primType = "I";
-					   break;
-		case Type.LONG: boxType = "java/lang/Long";
-					   primType = "J";
-					   break;
+			case Type.INT: boxType = "java/lang/Integer";
+						   primType = "I";
+						   break;
+			case Type.LONG: boxType = "java/lang/Long";
+						   primType = "J";
+						   break;
+			case Type.FLOAT: boxType = "java/lang/Float";
+						   primType = "F";
+						   break;
+			case Type.DOUBLE: boxType = "java/lang/Double";
+						   primType = "D";
+						   break;
 		}
 		MethodInsnNode iv = new MethodInsnNode(INVOKESTATIC, boxType, "valueOf", "("+ primType +")L"+boxType+";");
 		if(source.getOpcode()==SWAP) source = source.getPrevious(); // work around for inserted SWAP,POP
@@ -262,9 +377,12 @@ public class SecondTransformer extends BaseTransformer {
 		VarInsnNode v = (VarInsnNode)s;
 		if(v.var != callSiteVar) return false;
 		AbstractInsnNode s1 = s.getNext();
+		AbstractInsnNode s2 = s1.getNext();
 		if(s1.getOpcode() != LDC) return false;
+		if(s2.getOpcode() != AALOAD) return false;
 		LdcInsnNode l = (LdcInsnNode)s1;
-		currentSiteIndex = (Integer)l.cst;
+		callSiteIndexStack.push((Integer)l.cst);	
+		callSiteInsnLocations.put((Integer)l.cst, s);
 		return true;
 	}	
 	
@@ -318,11 +436,13 @@ public class SecondTransformer extends BaseTransformer {
 			Object constValue = pack.get(f.name);
 			LdcInsnNode newS = new LdcInsnNode(constValue);
 			AbstractInsnNode s1 = s.getNext();
+			if(s1.getOpcode()==DUP) s1 = s1.getNext(); // sometime the compiler use DUP to reuse TOS
 			units.set(s, newS);
 			if(s1.getOpcode()==ASTORE) {
 				Type type = Type.getType(constValue.getClass());				
 				fixASTORE(s1, getPrimitiveType(type));
-			}
+			} 
+			System.out.println("unwrap const");
 			return true;
 		}
 		return false;
@@ -352,6 +472,19 @@ public class SecondTransformer extends BaseTransformer {
 	
 	private static final String CALL_SITE_BIN_SIGNATURE = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
 		
+	private boolean isBinOpPrimitiveCall(AbstractInsnNode s) {
+		if(s.getOpcode() != INVOKEINTERFACE) return false;
+		MethodInsnNode iv = (MethodInsnNode)s;
+		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return false;
+		if(iv.name.equals("call") == false) return false;
+		if(iv.desc.equals(CALL_SITE_BIN_SIGNATURE) == false) return false;
+		String name = siteNames[currentSiteIndex];
+		BinOp op=null;
+		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
+		if(op == null) return false;
+		return true;
+	}
+	
 	private boolean unwrapBinaryPrimitiveCall(AbstractInsnNode s, Frame frame) {
 		if(s.getOpcode() != INVOKEINTERFACE) return false;
 		MethodInsnNode iv = (MethodInsnNode)s;
@@ -426,7 +559,10 @@ public class SecondTransformer extends BaseTransformer {
 		//System.out.println(t2.desc);		
 		if(s3.getOpcode()==ASTORE) {
 			if(s0 instanceof MethodInsnNode) {
-				unbox(s3, getPrimitiveType(t2.desc));
+				//System.out.println(siteNames[currentSiteIndex]);
+				if(isBinOpPrimitiveCall(s0)==false) {
+					unbox(s3, getPrimitiveType(t2.desc));
+				}
 			}
 			fixASTORE(s3, getPrimitiveType(t2.desc));			
 		}
