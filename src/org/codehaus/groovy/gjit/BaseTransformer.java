@@ -48,8 +48,13 @@ public class BaseTransformer extends Analyzer implements Opcodes {
 		pretransform();
 		if(preTransformationOnly) return;
 		frames = this.analyze(this.owner, this.node);
+		posttransform();
 	}	
 		
+	protected void posttransform() {
+		
+	}
+
 	private enum Phase {
 		PHASE_CALLSITE,
 		PHASE_NEXT_1,

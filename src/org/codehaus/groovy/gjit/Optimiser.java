@@ -66,22 +66,22 @@ public class Optimiser extends ClassAdapter {
 	}
 
 	public static void main(String[] args) throws Throwable {
-		RandomAccessFile r = new RandomAccessFile(new File("C:\\groovy-ck1\\gjit\\subject\\TreeNode.class"), "r");		
+		RandomAccessFile r = new RandomAccessFile(new File("C:\\groovy-ck1\\gjit\\subject\\" +args[0]+".class"), "r");		
 		byte[] bytes = new byte[(int) r.length()];
 		r.readFully(bytes);
 		ClassReader cr = new ClassReader(bytes);
 		PreProcess cv = new PreProcess(new EmptyVisitor());
-		cr.accept(cv, 0);				
+		cr.accept(cv,ClassReader.SKIP_DEBUG);				
 						
 		if(cv.isGroovyClassFile()) {
 			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);			
 			Optimiser cv2 = new Optimiser(cw, cv.getMethods());
-			cr.accept(cv2, 0);
+			cr.accept(cv2, ClassReader.SKIP_DEBUG);
 			byte[] outBytes = cw.toByteArray();
 			try {
-				new File("C:\\groovy-ck1\\gjit\\subject\\out\\TreeNode.class").delete();
+				new File("C:\\groovy-ck1\\gjit\\subject\\out\\"+args[0]+".class").delete();
 			} catch(Throwable e){}
-			RandomAccessFile ro = new RandomAccessFile(new File("C:\\groovy-ck1\\gjit\\subject\\out\\TreeNode.class"), "rw");
+			RandomAccessFile ro = new RandomAccessFile(new File("C:\\groovy-ck1\\gjit\\subject\\out\\"+args[0]+".class"), "rw");
 			ro.write(outBytes);
 			ro.close();
 		}
