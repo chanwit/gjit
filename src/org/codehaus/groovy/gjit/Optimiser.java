@@ -42,8 +42,8 @@ public class Optimiser extends ClassAdapter {
 		if(mn != null) {
 			try {
 				//System.out.println("method name: " + name + desc);
-				//if(name.equals("bottomUpTree") || name.equals("itemCheck")) 
-				if(name.equals("main"))
+				//if(name.equals("bottomUpTree"))// || name.equals("itemCheck")) 
+				//if(name.equals("main"))
 				  new SecondTransformer(owner, mn, pack, siteNames).transform();
 			} catch (Throwable e) {
 				e.printStackTrace();
@@ -71,12 +71,14 @@ public class Optimiser extends ClassAdapter {
 		r.readFully(bytes);
 		ClassReader cr = new ClassReader(bytes);
 		PreProcess cv = new PreProcess(new EmptyVisitor());
-		cr.accept(cv,ClassReader.SKIP_DEBUG);				
+		//final int mode = 0;
+		final int mode = ClassReader.SKIP_DEBUG;
+		cr.accept(cv, mode);				
 						
 		if(cv.isGroovyClassFile()) {
 			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);			
 			Optimiser cv2 = new Optimiser(cw, cv.getMethods());
-			cr.accept(cv2, ClassReader.SKIP_DEBUG);
+			cr.accept(cv2, mode);
 			byte[] outBytes = cw.toByteArray();
 			try {
 				new File("C:\\groovy-ck1\\gjit\\subject\\out\\"+args[0]+".class").delete();

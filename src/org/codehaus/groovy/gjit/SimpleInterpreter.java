@@ -130,7 +130,9 @@ public class SimpleInterpreter implements Opcodes {
 	}
 
 	private void execute0(FieldInsnNode insn) {
-		throw new RuntimeException("not implemented yet");				
+		push(new DefValue(insn, Type.getType(Object.class)));
+		//DebugUtils.dump(insn);
+		//throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);				
 	}
 
 	private void execute0(MethodInsnNode insn) {

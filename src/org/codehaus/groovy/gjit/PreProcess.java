@@ -5,6 +5,7 @@ import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codehaus.groovy.gjit.db.SiteTypePersistentCache;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -106,6 +107,8 @@ public class PreProcess extends ClassAdapter {
 				if(name.startsWith("$const$")) {					
 					pack.put(name, value);
 					state = ConstantCollectingState.GOT_NAME;
+				} else if(name.startsWith("__timeStamp")) {
+					SiteTypePersistentCache.v().add(name, (Long)value);
 				}
 				// TODO get __timeStamp
 			}
@@ -140,6 +143,7 @@ public class PreProcess extends ClassAdapter {
 	@Override
 	public FieldVisitor visitField(int access, String name, String desc,String signature, Object value) {
 		if(name.startsWith("__timeStamp__")==true) {
+			//System.out.println(name);
 			this.groovyClassFile = true;
 		}
 		return super.visitField(access, name, desc, signature, value);
