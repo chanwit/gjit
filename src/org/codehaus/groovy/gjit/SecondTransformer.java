@@ -19,11 +19,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.AbstractVisitor;
-
-import sun.security.util.Debug;
 
 public class SecondTransformer extends BaseTransformer {
 
@@ -261,7 +257,10 @@ public class SecondTransformer extends BaseTransformer {
 	private Type getPrimitiveInstType(AbstractInsnNode op) {
 		int opcode = op.getOpcode();
 		if(opcode == GETFIELD || opcode == GETSTATIC) {
-			return Type.getType(((FieldInsnNode)op).desc);
+			Type t =Type.getType(((FieldInsnNode)op).desc);
+			if(t.getSort() == Type.OBJECT || t.getSort() == Type.ARRAY) 
+			return null;
+			return t;
 		}
 		if(opcode >= ICONST_M1 && opcode <= ICONST_5) return Type.INT_TYPE;
 		if(opcode == ILOAD
@@ -332,8 +331,8 @@ public class SecondTransformer extends BaseTransformer {
 		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return;
 		if(iv.name.equals("call") == false) return;		
 		currentSiteIndex = callSiteIndexStack.pop();
-		AbstractInsnNode p2 = s.getPrevious();
-		AbstractInsnNode p1 = p2.getPrevious();
+		//AbstractInsnNode p2 = s.getPrevious();
+		//AbstractInsnNode p1 = p2.getPrevious();
 		if(isBinOpPrimitiveCall(s)==true) {
 			iv.setOpcode(INVOKESTATIC);
 			iv.name = siteNames[currentSiteIndex];
@@ -481,7 +480,7 @@ public class SecondTransformer extends BaseTransformer {
 
 	private boolean fixASTORE(AbstractInsnNode s, Type type) {
 		if(type == null) return false;
-		VarInsnNode v = (VarInsnNode)s;
+		//VarInsnNode v = (VarInsnNode)s;
 		return fixASTORE(s, type.getSort());
 	}	
 	
@@ -520,6 +519,9 @@ public class SecondTransformer extends BaseTransformer {
 			case Type.DOUBLE: boxType = "java/lang/Double";
 						   primType = "D";
 						   break;
+			default:
+				throw new RuntimeException("I'm trying to catch you" + t);
+				//break;
 		}
 		MethodInsnNode iv = new MethodInsnNode(INVOKESTATIC, boxType, "valueOf", "("+ primType +")L"+boxType+";");
 		//if(source.getOpcode()==SWAP) source = source.getPrevious(); // work around for inserted SWAP,POP
@@ -692,55 +694,55 @@ public class SecondTransformer extends BaseTransformer {
 		return true;
 	}
 	
-	private boolean unwrapBinaryPrimitiveCall(AbstractInsnNode s, Frame frame) {
-		if(s.getOpcode() != INVOKEINTERFACE) return false;
-		MethodInsnNode iv = (MethodInsnNode)s;
-		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return false;
-		if(iv.name.equals("call") == false) return false;
-		if(iv.desc.equals(CALL_SITE_BIN_SIGNATURE) == false) return false;
-		String name = siteNames[currentSiteIndex];
-		BinOp op=null;
-		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
-		if(op == null) return false;
-		int oldIndex = units.indexOf(s);
-		// if(s.getPrevious().getOpcode()==LLOAD) System.out.println(">> Found it !!");
-		Value v2 = frame.getStack(frame.getStackSize()-1); // peek
-		Value v1 = frame.getStack(frame.getStackSize()-2); // peek
-		// TODO if(v1.sort != v2.sort) do something
-		int offset = 0;
-		System.out.println("v1:" +v1);
-		System.out.println("v2:" +v2);
-		if(((BasicValue)v1).getType().equals(Type.LONG_TYPE)) offset = 1;
-		else if(((BasicValue)v1).getType().equals(Type.FLOAT_TYPE)) offset = 2;
-		else if(((BasicValue)v1).getType().equals(Type.DOUBLE_TYPE)) offset = 3;
-		switch(op) {
-			case minus:
-				units.set(s, new InsnNode(ISUB + offset)); break;
-			case plus:
-				units.set(s, new InsnNode(IADD + offset)); break;
-			case multiply:
-				units.set(s, new InsnNode(IMUL + offset)); break;
-			case div:
-				units.set(s, new InsnNode(IDIV + offset)); break;
-			case leftShift:
-				units.set(s, new InsnNode(ISHL + offset)); break;
-			case rightShift:
-				units.set(s, new InsnNode(ISHR + offset)); break;
-		}
-		s = units.get(oldIndex);
-		if(v1.getSize()==1) {
-		// SWAP,
-		// POP
-			units.insert(s, new InsnNode(POP));
-			units.insert(s, new InsnNode(SWAP));
-		} else if(v1.getSize()==2){
-			units.insert(s, new InsnNode(POP));
-			units.insert(s, new InsnNode(POP2));
-			units.insert(s, new InsnNode(DUP2_X1));			
-		}
-		
-		return true;
-	}	
+//	private boolean unwrapBinaryPrimitiveCall(AbstractInsnNode s, Frame frame) {
+//		if(s.getOpcode() != INVOKEINTERFACE) return false;
+//		MethodInsnNode iv = (MethodInsnNode)s;
+//		if(iv.owner.equals(CALL_SITE_INTERFACE) == false) return false;
+//		if(iv.name.equals("call") == false) return false;
+//		if(iv.desc.equals(CALL_SITE_BIN_SIGNATURE) == false) return false;
+//		String name = siteNames[currentSiteIndex];
+//		BinOp op=null;
+//		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
+//		if(op == null) return false;
+//		int oldIndex = units.indexOf(s);
+//		// if(s.getPrevious().getOpcode()==LLOAD) System.out.println(">> Found it !!");
+//		Value v2 = frame.getStack(frame.getStackSize()-1); // peek
+//		Value v1 = frame.getStack(frame.getStackSize()-2); // peek
+//		// TODO if(v1.sort != v2.sort) do something
+//		int offset = 0;
+//		System.out.println("v1:" +v1);
+//		System.out.println("v2:" +v2);
+//		if(((BasicValue)v1).getType().equals(Type.LONG_TYPE)) offset = 1;
+//		else if(((BasicValue)v1).getType().equals(Type.FLOAT_TYPE)) offset = 2;
+//		else if(((BasicValue)v1).getType().equals(Type.DOUBLE_TYPE)) offset = 3;
+//		switch(op) {
+//			case minus:
+//				units.set(s, new InsnNode(ISUB + offset)); break;
+//			case plus:
+//				units.set(s, new InsnNode(IADD + offset)); break;
+//			case multiply:
+//				units.set(s, new InsnNode(IMUL + offset)); break;
+//			case div:
+//				units.set(s, new InsnNode(IDIV + offset)); break;
+//			case leftShift:
+//				units.set(s, new InsnNode(ISHL + offset)); break;
+//			case rightShift:
+//				units.set(s, new InsnNode(ISHR + offset)); break;
+//		}
+//		s = units.get(oldIndex);
+//		if(v1.getSize()==1) {
+//		// SWAP,
+//		// POP
+//			units.insert(s, new InsnNode(POP));
+//			units.insert(s, new InsnNode(SWAP));
+//		} else if(v1.getSize()==2){
+//			units.insert(s, new InsnNode(POP));
+//			units.insert(s, new InsnNode(POP2));
+//			units.insert(s, new InsnNode(DUP2_X1));			
+//		}
+//		
+//		return true;
+//	}	
 
 	private boolean clearWrapperCast(AbstractInsnNode s) {
 //	    INVOKESTATIC TreeNode.$get$$class$java$lang$Integer()Ljava/lang/Class;

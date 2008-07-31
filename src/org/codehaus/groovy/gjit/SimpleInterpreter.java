@@ -295,7 +295,10 @@ public class SimpleInterpreter implements Opcodes {
 				used.put(insn, new AbstractInsnNode[]{arg0.source, arg1.source});
 				push(new DefValue(insn, Type.LONG_TYPE));
 				}
-				break;		
+				break;	
+			case ACONST_NULL:
+				push(new DefValue(insn, Type.VOID_TYPE));
+				break;
 			case RETURN:
 				break;
 			default:
