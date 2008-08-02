@@ -24,15 +24,13 @@ public class Transformer implements ClassFileTransformer {
 		} else if(className.startsWith("java") || className.startsWith("sun") || className.startsWith("soot")) {
 			return classfileBuffer;
 		} else {
-			// SootClass s = Scene.v().loadClass(className, SootClass.SIGNATURES);
-			// s.getFiel
+			// TODO scan file here
 			return classfileBuffer;
 		}
 		
 	}
 
-	private byte[] instrumentingMetaClass(byte[] classfileBuffer) {
-		
+	private byte[] instrumentingMetaClass(byte[] classfileBuffer) {		
 		return null;
 	}
 
