@@ -108,6 +108,7 @@ public class PreProcess extends ClassAdapter {
 					pack.put(name, value);
 					state = ConstantCollectingState.GOT_NAME;
 				} else if(name.startsWith("__timeStamp")) {
+					// TODO here is the call to SiteTypePersistentCache
 					SiteTypePersistentCache.v().add(name, (Long)value);
 				}
 				// TODO get __timeStamp

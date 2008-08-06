@@ -29,6 +29,7 @@
     <target depends="build-subprojects,build-project" name="build"/>
     <target name="build-subprojects"/>
     <target depends="init" name="build-project">
+	    <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="lib/jarjar-1.0rc7.jar"/>    	
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
             <src path="src"/>
@@ -38,13 +39,19 @@
             <src path="test"/>
             <classpath refid="gjit.classpath"/>
         </javac>
-    	<jar destfile="gjit.jar" basedir="bin">
-    		<include name="**/agent/*.class"/>
+	    <jar jarfile="gjit-cache.jar" basedir="bin">
+			<include name="**/db/*.class"/>
+	    </jar>
+    	<copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		
+	    <jarjar jarfile="gjit.jar" basedir="bin">
+			<include name="**/agent/*.class"/>
 		    <manifest>
 		      <attribute name="Premain-Class" value="org.codehaus.groovy.gjit.agent.Agent"/>
 		      <attribute name="Can-Redefine-Classes" value="true"/>
 		    </manifest>    		
-    	</jar>
+	        <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar"/>
+	    	<rule pattern="org.objectweb.**" result="gjitjarjarasm.@1"/>
+	    </jarjar>    	
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
 </project>
