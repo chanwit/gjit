@@ -44,7 +44,7 @@
 	    </jar>
     	<copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		
 	    <jarjar jarfile="gjit.jar" basedir="bin">
-			<include name="**/agent/*.class"/>
+			<include name="**/agent/**/*.class"/>
 		    <manifest>
 		      <attribute name="Premain-Class" value="org.codehaus.groovy.gjit.agent.Agent"/>
 		      <attribute name="Can-Redefine-Classes" value="true"/>
