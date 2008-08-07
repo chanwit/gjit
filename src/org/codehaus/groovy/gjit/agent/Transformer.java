@@ -5,6 +5,8 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.Stack;
 
+import org.codehaus.groovy.gjit.agent.instrumentor.CallSiteArrayInstrumentor;
+import org.codehaus.groovy.gjit.agent.instrumentor.MetaClassInstumentor;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -28,6 +30,8 @@ public class Transformer implements ClassFileTransformer {
 		//
 		if(className.equals("groovy/lang/MetaClassImpl")) {
 			return instrumentingMetaClass(classfileBuffer);
+		}else if(className.equals("org/codehaus/groovy/runtime/callsite/CallSiteArray")) {
+			return instrumentingCallSiteArray(classfileBuffer);
 		} else if(className.startsWith("java") || className.startsWith("sun") || className.startsWith("soot")) {
 			return classfileBuffer;
 		} else {
@@ -37,82 +41,18 @@ public class Transformer implements ClassFileTransformer {
 		
 	}
 	
-	class ProfilerMethodAdapter extends MethodAdapter implements Opcodes {
-
-		private Stack<Integer> params = new Stack<Integer>();
-		private String mname; 
-		
-		public ProfilerMethodAdapter(String name, MethodVisitor mv) {
-			super(mv);
-			this.mname = name;			
-		}
-				
-		@Override
-		public void visitVarInsn(int opcode, int var) {
-			// keep track of ALOAD x to use in visitMethodInsn
-			if(opcode==ALOAD) params.push(var);
-			super.visitVarInsn(opcode, var);
-		}
-
-		@Override
-		public void visitMethodInsn(int opcode, String owner, String name,String desc) {
-			if(opcode == INVOKESPECIAL) {
-				if(name.equals("getMethodWithCachingInternal")) {
-					if(desc.equals("(Ljava/lang/Class;Lorg/codehaus/groovy/runtime/callsite/CallSite;[Ljava/lang/Class;)Lgroovy/lang/MetaMethod;")) {
-						super.visitMethodInsn(opcode, owner, name, desc);
-						params.pop(); // params
-						mv.visitInsn(DUP); // dup result (MetaMethod)
-						if(mname.equals("createPojoCallSite")) {
-							int arg1 = params.pop(); // site
-							mv.visitVarInsn(ALOAD, 0);
-							mv.visitMethodInsn(INVOKEVIRTUAL, "groovy/lang/MetaClassImpl", "getTheClass", "()Ljava/lang/Class;");
-							mv.visitVarInsn(ALOAD, arg1);
-						} else if(mname.equals("createPogoCallSite")) {
-							int arg1 = params.pop(); // site							
-							mv.visitVarInsn(ALOAD, 0);
-							mv.visitFieldInsn(GETFIELD, "groovy/lang/MetaClassImpl", "theClass", "Ljava/lang/Class;");
-							mv.visitVarInsn(ALOAD, arg1);
-						} else {
-							int arg1 = params.pop(); // site
-							int arg0 = params.pop(); // sender							
-							mv.visitVarInsn(ALOAD, arg0);
-							mv.visitVarInsn(ALOAD, arg1);
-						}
-						// public static record(Lgroovy/lang/MetaMethod;Ljava/lang/Class;Lorg/codehaus/groovy/runtime/callsite/CallSite;)V						
-						mv.visitMethodInsn(INVOKESTATIC, 
-								"org/codehaus/groovy/gjit/db/SiteTypeHelper", 
-								"record", 
-								"(Lgroovy/lang/MetaMethod;Ljava/lang/Class;Lorg/codehaus/groovy/runtime/callsite/CallSite;)V");
-						return;
-					}
-				}
-			}
-			super.visitMethodInsn(opcode, owner, name, desc);
-		}		
-	}
-	
-	class MetaClassInstument extends ClassAdapter {
-
-		public MetaClassInstument(ClassVisitor cv) {
-			super(cv);
-		}
-
-		@Override
-		public MethodVisitor visitMethod(int access, String name, String desc,
-				String signature, String[] exceptions) {
-			if(name.equals("createPogoCallCurrentSite") ||
-				name.equals("createPogoCallSite") || 
-				name.equals("createPojoCallSite")) {				
-				return new ProfilerMethodAdapter(name, super.visitMethod(access, name, desc, signature, exceptions));
-			}
-			return super.visitMethod(access, name, desc, signature, exceptions);
-		}
+	private byte[] instrumentingCallSiteArray(byte[] classfileBuffer) {
+		ClassReader cr = new ClassReader(classfileBuffer);
+		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+		CallSiteArrayInstrumentor csai = new CallSiteArrayInstrumentor(cw);
+		cr.accept(csai, 0);
+		return cw.toByteArray();	
 	}
 
 	private byte[] instrumentingMetaClass(byte[] classfileBuffer) {		
 		ClassReader cr = new ClassReader(classfileBuffer);
 		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-		MetaClassInstument mci = new MetaClassInstument(cw);
+		MetaClassInstumentor mci = new MetaClassInstumentor(cw);
 		cr.accept(mci, 0);
 		return cw.toByteArray();
 	}
