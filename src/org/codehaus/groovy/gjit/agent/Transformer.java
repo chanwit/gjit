@@ -3,17 +3,13 @@ package org.codehaus.groovy.gjit.agent;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.Stack;
 
+import org.codehaus.groovy.gjit.Optimiser;
+import org.codehaus.groovy.gjit.PreProcess;
 import org.codehaus.groovy.gjit.agent.instrumentor.CallSiteArrayInstrumentor;
 import org.codehaus.groovy.gjit.agent.instrumentor.MetaClassInstumentor;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodAdapter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
 public class Transformer implements ClassFileTransformer {
 				
@@ -35,10 +31,22 @@ public class Transformer implements ClassFileTransformer {
 		} else if(className.startsWith("java") || className.startsWith("sun") || className.startsWith("soot")) {
 			return classfileBuffer;
 		} else {
-			// TODO scan file here
+			return optimisingGroovyClass(classfileBuffer);
+		}		
+	}
+
+	private byte[] optimisingGroovyClass(byte[] classfileBuffer) {
+		try {
+			PreProcess cv = PreProcess.perform(classfileBuffer);
+			if(cv.isGroovyClassFile()==false) {
+				return classfileBuffer;
+			} else { // if it's a groovy compiled class, try optimising 
+				return Optimiser.perform(cv, classfileBuffer);
+			}
+		} catch(Throwable e) {
+			e.printStackTrace();
 			return classfileBuffer;
 		}
-		
 	}
 	
 	private byte[] instrumentingCallSiteArray(byte[] classfileBuffer) {

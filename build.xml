@@ -39,19 +39,30 @@
             <src path="test"/>
             <classpath refid="gjit.classpath"/>
         </javac>
+	    <!-- jar jarfile="gjit-core.jar" basedir="bin">
+			<include name="**/gjit/*.class"/>
+	    </jar -->    	
 	    <jar jarfile="gjit-cache.jar" basedir="bin">
 			<include name="**/db/*.class"/>
 	    </jar>
-    	<copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		
-	    <jarjar jarfile="gjit.jar" basedir="bin">
+	    <jarjar jarfile="gjit-agent.jar" basedir="bin">
+	    	<include name="**/db/*.class"/>
+	    	<include name="**/gjit/*.class"/>
 			<include name="**/agent/**/*.class"/>
 		    <manifest>
 		      <attribute name="Premain-Class" value="org.codehaus.groovy.gjit.agent.Agent"/>
 		      <attribute name="Can-Redefine-Classes" value="true"/>
-		    </manifest>    		
+		    </manifest>
+		    <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-util/3.1/asm-util-3.1.jar"/>
+	    	<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-tree/3.1/asm-tree-3.1.jar"/>
+	    	<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-analysis/3.1/asm-analysis-3.1.jar"/>
+	    	<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-commons/3.1/asm-commons-3.1.jar"/>
 	        <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar"/>
 	    	<rule pattern="org.objectweb.**" result="gjitjarjarasm.@1"/>
-	    </jarjar>    	
+	    </jarjar>
+	    <!-- copy file="gjit-core.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->    		    	
+	    <copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		    	
+		<copy file="gjit-agent.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		    	
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
 </project>

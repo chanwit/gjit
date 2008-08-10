@@ -9,10 +9,10 @@ import org.codehaus.groovy.gjit.db.SiteTypePersistentCache;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.MethodNode;
 
 public class PreProcess extends ClassAdapter {
@@ -101,15 +101,15 @@ public class PreProcess extends ClassAdapter {
 		
 
 		@Override
-		public void visitFieldInsn(int opcode, String owner, String name,
-				String desc) {
+		public void visitFieldInsn(int opcode, String owner, String name,String desc) {
 			if( state == ConstantCollectingState.GOT_VALUE) {
 				if(name.startsWith("$const$")) {					
 					pack.put(name, value);
 					state = ConstantCollectingState.GOT_NAME;
 				} else if(name.startsWith("__timeStamp")) {
 					// TODO here is the call to SiteTypePersistentCache
-					SiteTypePersistentCache.v().add(name, (Long)value);
+					// System.out.println("owner: " + owner);
+					SiteTypePersistentCache.v().add(owner, (Long)value);
 				}
 				// TODO get __timeStamp
 			}
@@ -130,8 +130,7 @@ public class PreProcess extends ClassAdapter {
 		public void visitEnd() {
 			super.visitEnd();
 			ConstantRecord.v().put(className, pack);
-		}
-		
+		}		
 	}
 	
 	@Override
@@ -144,7 +143,6 @@ public class PreProcess extends ClassAdapter {
 	@Override
 	public FieldVisitor visitField(int access, String name, String desc,String signature, Object value) {
 		if(name.startsWith("__timeStamp__")==true) {
-			//System.out.println(name);
 			this.groovyClassFile = true;
 		}
 		return super.visitField(access, name, desc, signature, value);
@@ -184,17 +182,7 @@ public class PreProcess extends ClassAdapter {
 		if((name+desc).equals("setProperty(Ljava/lang/String;Ljava/lang/Object;)V")) return true;
 		return false;
 	}
-
-	public static void main(String[] args) throws Throwable {
-		RandomAccessFile r = new RandomAccessFile(new File("C:\\groovy-ck1\\groovy\\my\\TreeNode.class"), "r");		
-		byte[] bytes = new byte[(int) r.length()];
-		r.readFully(bytes);
-		ClassReader cr = new ClassReader(bytes);
-		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);		
-		PreProcess cv = new PreProcess(cw);
-		cr.accept(cv, 0);
-	}
-
+	
 	public Map<String, MethodNode> getMethods() {
 		return methods;
 	}
@@ -202,5 +190,24 @@ public class PreProcess extends ClassAdapter {
 	public boolean isGroovyClassFile() {
 		return groovyClassFile;
 	}
+			
+	public static PreProcess perform(byte[] bytes, int mode) {
+		ClassReader cr = new ClassReader(bytes);
+		PreProcess cv = new PreProcess(new EmptyVisitor());
+		cr.accept(cv, mode);	
+		return cv;
+	}
+	
+	public static PreProcess perform(byte[] bytes) {
+		return perform(bytes, 0);
+	}
+	
+	public static void main(String[] args) throws Throwable {
+		RandomAccessFile r = new RandomAccessFile(new File("C:\\groovy-ck1\\groovy\\my\\TreeNode.class"), "r");		
+		byte[] bytes = new byte[(int) r.length()];
+		r.readFully(bytes);
+		PreProcess.perform(bytes);
+	}
+
 
 }
