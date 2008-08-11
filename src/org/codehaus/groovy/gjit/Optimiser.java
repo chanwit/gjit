@@ -40,7 +40,7 @@ public class Optimiser extends ClassAdapter {
 		MethodNode mn = methods.get(name+desc);
 		if(mn != null) {
 			try {
-				//System.out.println("method name: " + name + desc);
+				//DebugUtils.println("method name: " + name + desc);
 				//if(name.equals("bottomUpTree"))// || name.equals("itemCheck")) 
 				//if(name.equals("main"))
 				  new SecondTransformer(owner, mn, pack, siteNames).transform();

@@ -67,10 +67,10 @@ public class SimpleInterpreter implements Opcodes {
 		AbstractInsnNode s0 = start;
 		prepareStack(s0);
 		// prepare fake stack entry for executing s0
-		// System.out.print(" stop at::: ");
+		// DebugUtils.print(" stop at::: ");
 		// DebugUtils.dump(stop);
 		while(s0 != stop) {
-			// System.out.print(" simple::: ");
+			// DebugUtils.print(" simple::: ");
 			// DebugUtils.dump(s0);
 			execute(s0);
 			s0 = s0.getNext();

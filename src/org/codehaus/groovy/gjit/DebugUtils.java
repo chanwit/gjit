@@ -15,7 +15,12 @@ import org.objectweb.asm.util.AbstractVisitor;
 
 public class DebugUtils {
 	
+	public static boolean debug = true;
+	
     public static void dump(AbstractInsnNode insn) {
+    	
+    	if(debug == false) return;
+    	
 		int opcode = insn.getOpcode();
 		if(insn.getOpcode() != -1) System.out.print(":: " + AbstractVisitor.OPCODES[opcode]);
 		if(insn instanceof InsnNode) {
@@ -57,6 +62,16 @@ public class DebugUtils {
 			System.out.print(' ');
 			System.out.println(((IincInsnNode)insn).incr);
 		}		
+	}
+
+	public static void println(Object o) {
+		if(debug == false) return;
+		System.out.println(o.toString());
+	}
+
+	public static void print(Object o) {
+		if(debug == false) return;
+		System.out.print(o);		
 	}
 
 }

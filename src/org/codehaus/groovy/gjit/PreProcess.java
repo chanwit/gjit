@@ -108,7 +108,7 @@ public class PreProcess extends ClassAdapter {
 					state = ConstantCollectingState.GOT_NAME;
 				} else if(name.startsWith("__timeStamp")) {
 					// TODO here is the call to SiteTypePersistentCache
-					// System.out.println("owner: " + owner);
+					// DebugUtils.println("owner: " + owner);
 					SiteTypePersistentCache.v().add(owner, (Long)value);
 				}
 				// TODO get __timeStamp
@@ -151,7 +151,7 @@ public class PreProcess extends ClassAdapter {
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String desc,
 			String signature, String[] exceptions) {
-		// System.out.println(name);
+		// DebugUtils.println(name);
 		if(this.groovyClassFile == true) {
 			if(name.equals("$createCallSiteArray")) {
 				return new CallSiteCollectorMV(super.visitMethod(access, name, desc, signature, exceptions));

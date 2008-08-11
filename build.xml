@@ -9,6 +9,9 @@
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.5"/>
     <property name="source" value="1.5"/>
+
+	<property name="version" value="0.1"/>
+	
     <path id="gjit.classpath">
         <pathelement location="bin"/>
         <pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar"/>
@@ -39,13 +42,7 @@
             <src path="test"/>
             <classpath refid="gjit.classpath"/>
         </javac>
-	    <!-- jar jarfile="gjit-core.jar" basedir="bin">
-			<include name="**/gjit/*.class"/>
-	    </jar -->    	
-	    <jar jarfile="gjit-cache.jar" basedir="bin">
-			<include name="**/db/*.class"/>
-	    </jar>
-	    <jarjar jarfile="gjit-agent.jar" basedir="bin">
+	    <jarjar jarfile="gjit-${version}.jar" basedir="bin">
 	    	<include name="**/db/*.class"/>
 	    	<include name="**/gjit/*.class"/>
 			<include name="**/agent/**/*.class"/>
@@ -61,8 +58,8 @@
 	    	<rule pattern="org.objectweb.**" result="gjitjarjarasm.@1"/>
 	    </jarjar>
 	    <!-- copy file="gjit-core.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->    		    	
-	    <copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		    	
-		<copy file="gjit-agent.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		    	
+	    <!-- copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->    		    	
+		<copy file="gjit-${version}.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/>    		    	
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
 </project>

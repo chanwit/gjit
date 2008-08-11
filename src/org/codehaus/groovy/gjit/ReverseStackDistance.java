@@ -223,7 +223,7 @@ public class ReverseStackDistance implements Opcodes {
 
     
     private int argStackSize(String d) {
-    	System.out.println("arg stack size" + d);
+    	DebugUtils.println("arg stack size" + d);
 		Type[] argTypes = Type.getArgumentTypes(d);
 		//sysout
 		int growth=0;
@@ -271,8 +271,8 @@ public class ReverseStackDistance implements Opcodes {
 	            	stacks -= growth;
 	            	break;
 	            case INVOKESTATIC:
-	            	System.out.print(((MethodInsnNode)p).name);
-	            	System.out.println(((MethodInsnNode)p).desc);
+	            	DebugUtils.print(((MethodInsnNode)p).name);
+	            	DebugUtils.println(((MethodInsnNode)p).desc);
 	            	growth = retStackSize(((MethodInsnNode)p).desc) - argStackSize(((MethodInsnNode)p).desc);
 	            	stacks -= growth;
 	            	break;

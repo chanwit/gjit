@@ -78,7 +78,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		postTransform();
 //		TraceMethodVisitor t = new TraceMethodVisitor(null);
 //		node.accept(t);
-//		System.out.println(t.text);		
+//		DebugUtils.println(t.text);		
 	}	
 	   
 	private void postTransform() {
@@ -136,8 +136,8 @@ public class Transformer extends Analyzer implements Opcodes {
 	@Override
 	public Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {		
 		Frame frame = frames.get(s);
-//		 System.out.println(frame);
-//		 System.out.println("index: " + units.indexOf(s));
+//		 DebugUtils.println(frame);
+//		 DebugUtils.println("index: " + units.indexOf(s));
 		if(extractCallSiteName(s)) return Action.NONE;
 		if(eliminateBoxCastUnbox(s)) return Action.REMOVE;
 		if(unwrapConst(s)) return Action.REPLACE;
@@ -159,44 +159,44 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(flag == true) {
 			MyBasicInterpreter i = (MyBasicInterpreter)interpreter;
 			MethodInsnNode m = (MethodInsnNode)insnNode;
-			// System.out.println(m.desc);
+			// DebugUtils.println(m.desc);
 			Type[] types = Type.getArgumentTypes(m.desc);
 			Value[] values = i.use.get(insnNode);
 			if(m.getOpcode() == INVOKESTATIC) {
 				for (int j = 0; j < values.length; j++) {
 					Type t = types[j];
 					BasicValue bv = ((BasicValue)values[j]);
-					//System.out.print(j + ". ");
+					//DebugUtils.print(j + ". ");
 					if(t.equals(bv.getType())==false && bv.isReference()==false) {
-//						System.out.print("expected: " + t + ", found: ");
-//						System.out.print(values[j]+", ");
+//						DebugUtils.print("expected: " + t + ", found: ");
+//						DebugUtils.print(values[j]+", ");
 						markForLaterBox.put(((DefValue)bv).source, bv.getType());
 					}
-//					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);					
+//					DebugUtils.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);					
 				}				
 			} else if(m.getOpcode() == INVOKEINTERFACE){
 				for (int j = 1; j < values.length; j++) {
 					Type t = types[j-1];
 					BasicValue bv = ((BasicValue)values[j]);					
-					//System.out.print(j + ". ");
+					//DebugUtils.print(j + ". ");
 					if(t.equals(bv.getType())==false && bv.isReference()==false) {
-//						System.out.print("expected: " + t + ", found: ");
-//						System.out.print(values[j]+", ");
+//						DebugUtils.print("expected: " + t + ", found: ");
+//						DebugUtils.print(values[j]+", ");
 						try {
 							markForLaterBox.put(((DefValue)bv).source, bv.getType());
 						} catch(ClassCastException e) {
-							System.out.print(m.owner+".");
-							System.out.print(m.name);
-							System.out.println(m.desc);
-							System.out.println(bv);
+							DebugUtils.print(m.owner+".");
+							DebugUtils.print(m.name);
+							DebugUtils.println(m.desc);
+							DebugUtils.println(bv);
 							// e.printStackTrace();
 							//throw new RuntimeException(e);
 						}
 					}
-//					System.out.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
+//					DebugUtils.println(AbstractVisitor.OPCODES[((DefValue)values[j]).source.getOpcode()]);
 				}								
 			}
-//			System.out.println("=================");			
+//			DebugUtils.println("=================");			
 			flag = false;
 		}
 		if(flag2 == true) {
@@ -204,7 +204,7 @@ public class Transformer extends Analyzer implements Opcodes {
 			// MethodInsnNode m = (MethodInsnNode)insnNode;
 			// Type[] types = Type.getArgumentTypes(m.desc);
 			Value[] values = i.use.get(insnNode);			
-			System.out.println(AbstractVisitor.OPCODES[insnNode.getOpcode()]);
+			DebugUtils.println(AbstractVisitor.OPCODES[insnNode.getOpcode()]);
 			try {
 				DefValue defValue = (DefValue)values[0];
 				if(defValue.isReference()) {				
@@ -252,11 +252,11 @@ public class Transformer extends Analyzer implements Opcodes {
 		   s.getOpcode() != INVOKESTATIC) return false;
 		MethodInsnNode iv = (MethodInsnNode)s;		
 		if(iv.owner.equals(CALL_SITE_INTERFACE) && iv.name.startsWith("call")) {
-			//System.out.println(iv.name);
+			//DebugUtils.println(iv.name);
 			flag = true;
 			return true;
 		} else if (iv.owner.equals(SCRIPT_BYTECODE_ADAPTER) && !iv.name.equals("unwrap")) {
-			//System.out.println(iv.name);
+			//DebugUtils.println(iv.name);
 			flag = true;
 			return true;
 		}
@@ -325,7 +325,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(className.charAt(0)=='L' && className.charAt(className.length()-1)==';') {
 			className = className.substring(1,className.length()-1);
 		}
-		// System.out.println("getPrimitive: " + className);
+		// DebugUtils.println("getPrimitive: " + className);
 		if(className.equals("java/lang/Integer")) return 'I';
 		if(className.equals("java/lang/Long")) return 'J';
 		if(className.equals("java/lang/Boolean")) return 'Z';
@@ -421,7 +421,7 @@ public class Transformer extends Analyzer implements Opcodes {
 		catch(IllegalArgumentException e) {
 			return false;
 		}
-//		System.out.println(">>>>> did unwrapping compare");
+//		DebugUtils.println(">>>>> did unwrapping compare");
 		switch(compare) {
 			case compareGreaterThan:
 				units.set(s1, new JumpInsnNode(IF_ICMPLE, s1.label)); break;
@@ -497,20 +497,20 @@ public class Transformer extends Analyzer implements Opcodes {
 		if(iv.name.equals("call") == false) return false;
 		if(iv.desc.equals("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;") == false) return false;
 		String name = siteNames[currentSiteIndex];
-		// System.out.println("frame: " + frame);
+		// DebugUtils.println("frame: " + frame);
 		BinOp op=null;
 		try {op = BinOp.valueOf(name);} catch(IllegalArgumentException e){}
 		if(op == null) return false;
 		// TODO check type from "frame"
-		System.out.println("frame: " + frame);
+		DebugUtils.println("frame: " + frame);
 		int oldIndex = units.indexOf(s);
-		if(s.getPrevious().getOpcode()==LLOAD) System.out.println(">> Found it !!");
+		if(s.getPrevious().getOpcode()==LLOAD) DebugUtils.println(">> Found it !!");
 		Value v2 = frame.getStack(frame.getStackSize()-1); // peek
 		Value v1 = frame.getStack(frame.getStackSize()-2); // peek
 		// TODO if(v1.sort != v2.sort) do something
 		int offset = 0;
-		System.out.println("v1:" +v1);
-		System.out.println("v2:" +v2);
+		DebugUtils.println("v1:" +v1);
+		DebugUtils.println("v2:" +v2);
 		if(((BasicValue)v1).getType().equals(Type.LONG_TYPE)) offset = 1;
 		else if(((BasicValue)v1).getType().equals(Type.FLOAT_TYPE)) offset = 2;
 		else if(((BasicValue)v1).getType().equals(Type.DOUBLE_TYPE)) offset = 3;
