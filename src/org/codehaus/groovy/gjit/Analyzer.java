@@ -232,9 +232,9 @@ public class Analyzer implements Opcodes {
         	// queued.put(insn, Boolean.FALSE);
         	
             try {
-            	// System.out.println(insn);
+            	// DebugUtils.println(insn);
             	int oldIndex = insns.indexOf(insn);
-            	// System.out.println(">> ORG F: at " + oldIndex + "]["+ f);            	
+            	// DebugUtils.println(">> ORG F: at " + oldIndex + "]["+ f);            	
             	boolean done = false;
             	while(done==false) {            	
         			f = frames.get(insn);
@@ -249,7 +249,7 @@ public class Analyzer implements Opcodes {
 	            	switch(action) {
 	            		case REPLACE:  
 	            			insn = insns.get(oldIndex);
-	            			// System.out.println(">> F: " + f);
+	            			// DebugUtils.println(">> F: " + f);
 	            			frames.put(insn, f);
 	            			subroutines.put(insn, subroutine);
 	            			queued.put(insn, Boolean.FALSE);	            			
@@ -271,14 +271,14 @@ public class Analyzer implements Opcodes {
             	}
                 AbstractInsnNode insnNode = insn; 
                 // m.instructions.get(insn); 
-                // System.out.println(insn + ":" + insnNode);
+                // DebugUtils.println(insn + ":" + insnNode);
                 
                 int insnOpcode = insnNode.getOpcode();
                 int insnType = insnNode.getType();
                 
                 if(insnOpcode != -1) {
-                	//System.out.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-                	// System.out.println("Frame: " + f);
+                	//DebugUtils.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+                	// DebugUtils.println("Frame: " + f);
                 	//debug(insn);
                 	DebugUtils.dump(insn);
                 }

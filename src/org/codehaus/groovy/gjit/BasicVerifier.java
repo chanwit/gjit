@@ -92,7 +92,7 @@ public class BasicVerifier extends BasicInterpreter {
         }
         // type is necessarily a primitive type here,
         // so value must be == to expected value
-        System.out.println("debug " + value);
+        DebugUtils.println("debug " + value);
         if (((BasicValue)value).getType() == null
         	|| ((BasicValue)value).getType().equals(((BasicValue)expected).getType())==false) {
         	Value handled = handleCopyOperation(insn, value);
@@ -438,15 +438,15 @@ public class BasicVerifier extends BasicInterpreter {
                 }
             }
             Type[] args = Type.getArgumentTypes(((MethodInsnNode) insn).desc);
-            //System.out.println("====");
+            //DebugUtils.println("====");
             while (i < values.size()) {
                 Value expected = newValue(args[j++]);
                 Value encountered = (Value) values.get(i++);
-                //System.out.println("expected: " + expected);
-                //System.out.println("encounter: " + encountered);
+                //DebugUtils.println("expected: " + expected);
+                //DebugUtils.println("encounter: " + encountered);
                 if (!isSubTypeOf(encountered, expected)) {
                 	//printError("Argument " + j,expected,encountered);
-                	// System.out.println("going to be handle nary");
+                	// DebugUtils.println("going to be handle nary");
                 	boolean handled = handleNaryOperation(insn, j, expected, encountered);
                 	if(handled == false) {
                 		throw new AnalyzerException("Argument " + j, expected, encountered);

@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codehaus.groovy.gjit.DebugUtils;
+
 public class SiteTypePersistentCache implements Serializable {
 	
 	private static final long serialVersionUID = 7031435017464448743L;
@@ -93,7 +95,7 @@ public class SiteTypePersistentCache implements Serializable {
 					throw new RuntimeException("Cache on disk is created from a compiled class file in the future: " + filename);
 				} else if(objOnDisk.getTimeStamp() == ce.getTimeStamp()){
 					ce = objOnDisk;
-					System.out.println("reading from cache, instead of creating the new one");
+					DebugUtils.println("reading from cache, instead of creating the new one");
 				}
 			}
 			this.classEntries.put(name, ce);			
