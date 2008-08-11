@@ -2,7 +2,9 @@ package org.codehaus.groovy.gjit.db;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ClassEntry implements Serializable {
 	
@@ -10,7 +12,8 @@ public class ClassEntry implements Serializable {
 	
 	private String name;
 	private long timeStamp;
-	private List<SiteEntry> siteEntries = new ArrayList<SiteEntry>();
+	//private List<SiteEntry> siteEntries = new ArrayList<SiteEntry>();
+	private Map<Integer, SiteEntry> siteEntries = new HashMap<Integer, SiteEntry>();
 	
 	public ClassEntry(){}
 	
@@ -31,20 +34,18 @@ public class ClassEntry implements Serializable {
 	public void setTimeStamp(long timeStamp) {
 		this.timeStamp = timeStamp;
 	}
-	public List<SiteEntry> getSiteEntries() {
-		return siteEntries;
-	}
-	public void setSiteEntries(List<SiteEntry> siteEntries) {
-		this.siteEntries = siteEntries;
-	}
 
 	public void add(SiteEntry s) {
-		this.siteEntries.add(s);
+		this.siteEntries.put(s.getCallSiteIndex(), s);
 	}
 
 	public ClassEntry add(int callsiteIndex, String returnTypeDesc) {
-		this.siteEntries.add(new SiteEntry(callsiteIndex, returnTypeDesc));
+		this.siteEntries.put(callsiteIndex, new SiteEntry(callsiteIndex, returnTypeDesc));
 		return this;
+	}
+
+	public String getReturnType(int op1_index) {		
+		return this.siteEntries.get(op1_index).getTypeDesc();
 	}
 	
 }

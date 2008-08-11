@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import org.codehaus.groovy.gjit.db.ClassEntry;
+import org.codehaus.groovy.gjit.db.SiteTypePersistentCache;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -31,6 +33,7 @@ public class SecondTransformer extends BaseTransformer {
 	private Map<Integer, AbstractInsnNode> callSiteInsnLocations = new HashMap<Integer, AbstractInsnNode>();
 	private List<Integer> unusedCallSites = new ArrayList<Integer>();
 	private List<AbstractInsnNode> fixed = new ArrayList<AbstractInsnNode>();
+	private ClassEntry ce;
 
 	private static final String SCRIPT_BYTECODE_ADAPTER = "org/codehaus/groovy/runtime/ScriptBytecodeAdapter";
 	private static final String CALL_SITE_INTERFACE = "org/codehaus/groovy/runtime/callsite/CallSite";
@@ -43,6 +46,12 @@ public class SecondTransformer extends BaseTransformer {
 		this.siteNames = siteNames;
 		this.localTypes = new int[mn.maxLocals];
 		this.interpreter = new MyBasicInterpreter();// new FixableInterpreter();
+		try {
+			this.ce = SiteTypePersistentCache.v().find(owner);
+		} catch (Throwable e) {
+			DebugUtils.println("error cannot get cache entry of sitetype");
+			this.ce = null;
+		}		
 	}
 
 	@Override
@@ -234,6 +243,10 @@ public class SecondTransformer extends BaseTransformer {
 			AbstractInsnNode operand2 = s.getPrevious();
 			AbstractInsnNode operand1 = operand2.getPrevious();
 			if (operand1 instanceof MethodInsnNode || operand2 instanceof MethodInsnNode) {
+				int op1_index;
+				// use op1 as InsnNode to get its index
+				// use op2 as InsnNode to get its index
+				ce.getReturnType(op1_index);
 				iv.setOpcode(INVOKEINTERFACE);
 				iv.name = "call";
 				unusedCallSites.remove(currentSiteIndex);
@@ -793,10 +806,8 @@ public class SecondTransformer extends BaseTransformer {
 		BinOp op = null;
 		try {
 			op = BinOp.valueOf(name);
-		} catch (IllegalArgumentException e) {
-		}
-		if (op == null)
-			return false;
+		} catch (IllegalArgumentException e) {}
+		if (op == null) return false;
 		return true;
 	}
 
