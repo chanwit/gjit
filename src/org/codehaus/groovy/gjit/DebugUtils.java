@@ -74,4 +74,9 @@ public class DebugUtils {
 		System.out.print(o);		
 	}
 
+	public static void println() {
+		if(debug == false) return;
+		System.out.println();		
+	}
+
 }
