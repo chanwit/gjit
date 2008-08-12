@@ -1,4 +1,4 @@
-package minimal;
+package helper;
 
 import java.io.File;
 import java.io.PrintWriter;

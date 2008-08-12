@@ -1,5 +1,7 @@
 package minimal;
 
+import helper.Utils;
+
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
 
