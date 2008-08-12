@@ -10,7 +10,7 @@ import junit.framework.TestCase;
 import org.codehaus.groovy.gjit.Optimiser;
 import org.codehaus.groovy.gjit.PreProcess;
 
-public class AddTests extends TestCase {
+public class IntAddTests extends TestCase {
 		
 	private static Class<?> c;
 	private static byte[] out;
