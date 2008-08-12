@@ -32,4 +32,12 @@ public class LongSubject{
 		return 333333333333 + 1
 	}	
 	
+	long add_006() {
+		return 1 + 111111111111 + 2 + 111111111111
+	}
+	
+	long add_007() {
+		return 111111111111 + 1 + 2 + 111111111111
+	}	
+	
 }

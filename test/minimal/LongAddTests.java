@@ -63,5 +63,20 @@ public class LongAddTests extends TestCase {
 		Object o = c.newInstance();
 		Double result = (Double)m.invoke(o);
 		assertEquals((double)3.33333333334E11, (double)result);
+	}	
+	
+	public void test_long_const_add_const_2Longs_2Ints() throws Throwable {
+		Method m = c.getMethod("add_006");
+		Object o = c.newInstance();
+		Long result = (Long)m.invoke(o);
+		assertEquals(222222222225L, (long)result);
+	}	
+	
+	public void test_long_const_add_const_2Longs_2Ints_2ndcombination() throws Throwable {
+		Method m = c.getMethod("add_007");
+		Object o = c.newInstance();
+		Long result = (Long)m.invoke(o);
+		assertEquals(222222222225L, (long)result);
 	}		
+	
 }
