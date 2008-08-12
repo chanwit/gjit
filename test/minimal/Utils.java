@@ -1,5 +1,11 @@
 package minimal;
 
+import java.io.PrintWriter;
+
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.util.TraceClassVisitor;
+
 public class Utils {
 
 	public static Class<?> loadClass(String className, byte[] b) {
@@ -25,4 +31,12 @@ public class Utils {
 		}
 		return clazz;
 	}
+	
+	public static void dump(byte[] bytes) throws Exception {
+        int flags = ClassReader.SKIP_DEBUG;
+        ClassReader cr;
+        cr = new ClassReader(bytes);
+        cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), new Attribute[0], flags);
+    }
+	
 }
