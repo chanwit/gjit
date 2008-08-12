@@ -1,5 +1,6 @@
 package minimal;
 
+import java.io.File;
 import java.io.PrintWriter;
 
 import org.objectweb.asm.Attribute;
@@ -38,5 +39,15 @@ public class Utils {
         cr = new ClassReader(bytes);
         cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), new Attribute[0], flags);
     }
+	
+	public static void dumpForCompare(byte[] orgs, byte[] bytes) throws Exception {
+        int flags = 0;
+        ClassReader cr;
+        cr = new ClassReader(bytes);
+        cr.accept(new TraceClassVisitor(new PrintWriter(new File("out.dump"))), new Attribute[0], flags);
+        ClassReader cr2;
+        cr2 = new ClassReader(orgs);
+        cr2.accept(new TraceClassVisitor(new PrintWriter(new File("in.dump"))), new Attribute[0], flags);        
+    }	
 	
 }
