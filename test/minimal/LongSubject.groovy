@@ -23,4 +23,13 @@ public class LongSubject{
 		return 1 + 222222222222
 	}
 	
+	float add_004() {
+		return 1 + 222222222222
+	}
+	
+	
+	double add_005() {
+		return 333333333333 + 1
+	}	
+	
 }

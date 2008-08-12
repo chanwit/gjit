@@ -49,4 +49,17 @@ public class LongAddTests extends TestCase {
 		assertEquals(-1116077169, (int)result);
 	}	
 	
+	public void test_long_add_int_return_float() throws Throwable {
+		Method m = c.getMethod("add_004");
+		Object o = c.newInstance();
+		Float result = (Float)m.invoke(o);
+		assertEquals((float)2.22222221E11, (float)result);
+	}		
+	
+	public void test_long_add_int_return_double() throws Throwable {
+		Method m = c.getMethod("add_005");
+		Object o = c.newInstance();
+		Double result = (Double)m.invoke(o);
+		assertEquals((double)3.33333333334E11, (double)result);
+	}		
 }
