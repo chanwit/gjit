@@ -32,8 +32,9 @@ public class SecondTransformer extends BaseTransformer {
 	private Stack<Integer> callSiteIndexStack = new Stack<Integer>();
 	private Map<Integer, AbstractInsnNode> callSiteInsnLocations = new HashMap<Integer, AbstractInsnNode>();
 	private List<Integer> unusedCallSites = new ArrayList<Integer>();
-	private List<AbstractInsnNode> fixed = new ArrayList<AbstractInsnNode>();
+	//private List<AbstractInsnNode> fixed = new ArrayList<AbstractInsnNode>();
 	private ClassEntry ce;
+	private HashMap<AbstractInsnNode, Integer> indexMap = new HashMap<AbstractInsnNode, Integer>();
 
 	private static final String SCRIPT_BYTECODE_ADAPTER = "org/codehaus/groovy/runtime/ScriptBytecodeAdapter";
 	private static final String CALL_SITE_INTERFACE = "org/codehaus/groovy/runtime/callsite/CallSite";
@@ -243,10 +244,14 @@ public class SecondTransformer extends BaseTransformer {
 			AbstractInsnNode operand2 = s.getPrevious();
 			AbstractInsnNode operand1 = operand2.getPrevious();
 			if (operand1 instanceof MethodInsnNode || operand2 instanceof MethodInsnNode) {
-				int op1_index;
 				// use op1 as InsnNode to get its index
 				// use op2 as InsnNode to get its index
-				ce.getReturnType(op1_index);
+				int op1_index = indexMap.get(operand1);
+				int op2_index = indexMap.get(operand1);
+				String op1_rtype = ce.getReturnType(op1_index);
+				String op2_rtype = ce.getReturnType(op2_index);
+				// what to do next ?
+				
 				iv.setOpcode(INVOKEINTERFACE);
 				iv.name = "call";
 				unusedCallSites.remove(currentSiteIndex);
@@ -365,6 +370,7 @@ public class SecondTransformer extends BaseTransformer {
 		if (iv.name.equals("call") == false)
 			return;
 		currentSiteIndex = callSiteIndexStack.pop();
+		indexMap.put(s, currentSiteIndex);
 		// AbstractInsnNode p2 = s.getPrevious();
 		// AbstractInsnNode p1 = p2.getPrevious();
 		if (isBinOpPrimitiveCall(s) == true) {
