@@ -170,107 +170,26 @@ public class SecondTransformer extends BaseTransformer {
 	}
 
 	private boolean fix_XRETURN(AbstractInsnNode s) {
-		if(s.getOpcode() == IRETURN) {
+		if(s.getOpcode() >= IRETURN && s.getOpcode() <= DRETURN) {
 			AbstractInsnNode p = s.getPrevious();
-			switch(p.getOpcode()) {
-				case LADD:
-				case LSUB:
-				case LMUL:
-				case LDIV:
-					units.insertBefore(s, new InsnNode(L2I));
-					return true;
-				case FADD:
-				case FSUB:
-				case FMUL:
-				case FDIV:
-					units.insertBefore(s, new InsnNode(F2I));
-					return true;
-				case DADD:
-				case DSUB:
-				case DMUL:
-				case DDIV:
-					units.insertBefore(s, new InsnNode(D2I));
-					return true;										
+			DebugUtils.dump = true;
+			DebugUtils.dump(p);
+			DebugUtils.dump = false;
+			int opcode = getConverterOpCode(getÚÑBytecodeType(p), getÚÑBytecodeType(s));
+			if(opcode != 0) {
+				units.insertBefore(s, new InsnNode(opcode));
+				return true;
 			}
-		} else if(s.getOpcode() == LRETURN) {
-			AbstractInsnNode p = s.getPrevious();
-			switch(p.getOpcode()) {
-				case IADD:
-				case ISUB:
-				case IMUL:
-				case IDIV:
-					units.insertBefore(s, new InsnNode(I2L));
-					return true;
-				case FADD:
-				case FSUB:
-				case FMUL:
-				case FDIV:
-					units.insertBefore(s, new InsnNode(F2L));
-					return true;
-				case DADD:
-				case DSUB:
-				case DMUL:
-				case DDIV:
-					units.insertBefore(s, new InsnNode(D2L));
-					return true;
-			}
-		} else if(s.getOpcode() == FRETURN) {
-			AbstractInsnNode p = s.getPrevious();
-			switch(p.getOpcode()) {
-				case IADD:
-				case ISUB:
-				case IMUL:
-				case IDIV:
-					units.insertBefore(s, new InsnNode(I2F));
-					return true;
-				case LADD:
-				case LSUB:
-				case LMUL:
-				case LDIV:
-					units.insertBefore(s, new InsnNode(L2F));
-					return true;
-				case DADD:
-				case DSUB:
-				case DMUL:
-				case DDIV:
-					units.insertBefore(s, new InsnNode(D2F));
-					return true;
-			}
-		} else if(s.getOpcode() == DRETURN) {
-			AbstractInsnNode p = s.getPrevious();
-			switch(p.getOpcode()) {
-				case IADD:
-				case ISUB:
-				case IMUL:
-				case IDIV:
-					units.insertBefore(s, new InsnNode(I2D));
-					return true;
-				case LADD:
-				case LSUB:
-				case LMUL:
-				case LDIV:
-					units.insertBefore(s, new InsnNode(L2D));
-					return true;
-				case FADD:
-				case FSUB:
-				case FMUL:
-				case FDIV:
-					units.insertBefore(s, new InsnNode(F2D));
-					return true;
-			}			
-		}  else if(s.getOpcode() == ARETURN) {
-			DebugUtils.println(">>>>>>>> doing ARETURN");
+		} else if(s.getOpcode() == ARETURN) {
 			AbstractInsnNode p = s.getPrevious();
 			if(p.getOpcode() == PUTFIELD) {
-				DebugUtils.println(">>>>>>>> then putfield found");
 				FieldInsnNode f = (FieldInsnNode)p;
 				if(f.desc.length()==1) {
-					DebugUtils.println(">>>>>>>> then after if f.desc");
 					switch(f.desc.charAt(0)) {
 						case 'I': box(p, Type.INT_TYPE); return true;
 						case 'L': box(p, Type.LONG_TYPE); return true;
 						case 'F': box(p, Type.FLOAT_TYPE); return true;
-						case 'D': box(p, Type.DOUBLE_TYPE); DebugUtils.println(">>>>>>>> then box D"); return true;
+						case 'D': box(p, Type.DOUBLE_TYPE); return true;
 					}
 				}
 			} else {
@@ -354,6 +273,9 @@ public class SecondTransformer extends BaseTransformer {
 	}
 
 	private void fixByArguments_specialCase1(MethodInsnNode iv) {
+		DebugUtils.dump=true;
+		DebugUtils.dump(iv);
+		DebugUtils.dump=false;
 		AbstractInsnNode s0 = findStartingInsn(iv);
 		SimpleInterpreter in = new SimpleInterpreter(this.node, s0, iv);
 		AbstractInsnNode[] useBox = in.analyse().get(iv);
@@ -366,7 +288,7 @@ public class SecondTransformer extends BaseTransformer {
 				DebugUtils.dump(useBox[i]);
 				if (argTypes[i].getSort() == Type.OBJECT
 						|| argTypes[i].getSort() == Type.ARRAY) {
-					Type t = getPrimitiveInstType(useBox[i]);
+					Type t = getÚÑBytecodeType(useBox[i]);
 					if (t != null) {
 						box(useBox[i], t);
 					}
@@ -380,7 +302,7 @@ public class SecondTransformer extends BaseTransformer {
 				DebugUtils.dump(useBox[i + 1]);
 				if (argTypes[i].getSort() == Type.OBJECT
 						|| argTypes[i].getSort() == Type.ARRAY) {
-					Type t = getPrimitiveInstType(useBox[i + 1]);
+					Type t = getÚÑBytecodeType(useBox[i + 1]);
 					if (t != null) {
 						DebugUtils.dump(iv);
 						DebugUtils.print(", to box ");
@@ -423,8 +345,8 @@ public class SecondTransformer extends BaseTransformer {
 				unusedCallSites.remove(currentSiteIndex);
 				return true;
 			}
-			Type t2 = getPrimitiveInstType(s_op2);
-			Type t1 = getPrimitiveInstType(s_op1);
+			Type t2 = getÚÑBytecodeType(s_op2);
+			Type t1 = getÚÑBytecodeType(s_op1);
 			Type toType=t1;
 			Type fromType = null;
 			if (t1 != null && t2 != null) {
@@ -439,13 +361,7 @@ public class SecondTransformer extends BaseTransformer {
 						toType = t2;
 						op_to_promote = s_op1;
 					}
-					InsnNode converter=null;
-					if(fromType.getSort()==Type.INT && toType.getSort()==Type.LONG) converter = new InsnNode(I2L);
-					if(fromType.getSort()==Type.INT && toType.getSort()==Type.FLOAT) converter = new InsnNode(I2F);
-					if(fromType.getSort()==Type.INT && toType.getSort()==Type.DOUBLE) converter = new InsnNode(I2D);
-					if(fromType.getSort()==Type.LONG && toType.getSort()==Type.FLOAT) converter = new InsnNode(L2F);
-					if(fromType.getSort()==Type.LONG && toType.getSort()==Type.DOUBLE) converter = new InsnNode(L2D);
-					if(fromType.getSort()==Type.FLOAT && toType.getSort()==Type.DOUBLE) converter = new InsnNode(F2D);
+					InsnNode converter=new InsnNode(getConverterOpCode(fromType, toType));					
 					units.insert(op_to_promote, converter);
 				}
 				int offset = 0;
@@ -477,7 +393,7 @@ public class SecondTransformer extends BaseTransformer {
 		return false;
 	}
 
-	private Type getPrimitiveInstType(AbstractInsnNode op) {
+	private Type getÚÑBytecodeType(AbstractInsnNode op) {
 		int opcode = op.getOpcode();
 		if (opcode == GETFIELD || opcode == GETSTATIC) {
 			Type t = Type.getType(((FieldInsnNode) op).desc);
@@ -495,6 +411,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == ISUB
 				|| opcode == IMUL 
 				|| opcode == IDIV
+				|| opcode == IRETURN
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Integer))
 			return Type.INT_TYPE;
 		if (opcode == LLOAD 
@@ -502,9 +419,10 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == LCONST_1
 				|| opcode == LALOAD 
 				|| opcode == LADD 
-				|| opcode == ISUB
-				|| opcode == IMUL 
-				|| opcode == IDIV
+				|| opcode == LSUB
+				|| opcode == LMUL 
+				|| opcode == LDIV
+				|| opcode == LRETURN
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Long))
 			return Type.LONG_TYPE;
 		if (opcode == FLOAD 
@@ -515,6 +433,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == FSUB
 				|| opcode == FMUL 
 				|| opcode == FDIV
+				|| opcode == FRETURN
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Float))
 			return Type.FLOAT_TYPE;
 		if (opcode == DLOAD 
@@ -525,6 +444,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == DSUB
 				|| opcode == DMUL 
 				|| opcode == DDIV
+				|| opcode == DRETURN
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Double))
 			return Type.DOUBLE_TYPE;
 		return null;
@@ -677,17 +597,12 @@ public class SecondTransformer extends BaseTransformer {
 			case Type.INT:
 				newS = new VarInsnNode(ISTORE, v.var);
 				units.set(s, newS);
-				// DebugUtils.print(">> fix ASTORE " + v.var);
-				// DebugUtils.println(" to ISTORE " + v.var);
 				localTypes[v.var] = Type.INT;
 				t = Type.INT_TYPE;
 				break;
 			case Type.LONG:
 				newS = new VarInsnNode(LSTORE, v.var);
 				units.set(s, newS);
-				// DebugUtils.print(">> fix ASTORE " + v.var);
-				// DebugUtils.println(" to LSTORE " + v.var);
-				// Thread.dumpStack();
 				localTypes[v.var] = Type.LONG;
 				t = Type.LONG_TYPE;
 				break;
@@ -709,21 +624,71 @@ public class SecondTransformer extends BaseTransformer {
 		if (t != null) {
 			AbstractInsnNode p = newS.getPrevious();
 			if (p != null) {
-				if (p.getOpcode() == DUP)
-					p = p.getPrevious();
+				if (p.getOpcode() == DUP) p = p.getPrevious();
 				if (p instanceof MethodInsnNode) {
 					MethodInsnNode iv = ((MethodInsnNode) p);
-					if (iv.name.equals("call")
-							&& iv.desc.equals(CALL_SITE_BIN_SIGNATURE)) {
-						DebugUtils.println(">>>>>>>> doing unbox in fixASTORE");
+					if (iv.name.equals("call") && iv.desc.equals(CALL_SITE_BIN_SIGNATURE)) {
 						unbox(newS, t);
 					}
+				} else if(getÚÑBytecodeType(p) != getÚÑBytecodeType(s)) {
+					int converterOpcode = getConverterOpCode(getÚÑBytecodeType(p),getÚÑBytecodeType(s));
+					InsnNode converter = new InsnNode(converterOpcode);
+					units.insertBefore(newS, converter);
 				}
 			}
 		}
 		return true;
 	}
+	
 
+	private int getConverterOpCode(Type fromType, Type toType) {
+		if(fromType == null) return 0;
+		if(toType == null) return 0;
+		switch(fromType.getSort()) {
+			case Type.INT: return getConvertIntTo(toType);
+			case Type.LONG: return getConvertLongTo(toType);
+			case Type.FLOAT: return getConvertFloatTo(toType);
+			case Type.DOUBLE: return getConvertDoubleTo(toType);			
+		}
+		return 0;
+	}
+
+	private int getConvertIntTo(Type toType) {
+		switch(toType.getSort()) {
+			case Type.LONG: return I2L; 
+			case Type.FLOAT: return I2F; 
+			case Type.DOUBLE: return I2D; 
+		}
+		return 0;
+	}
+	
+	private int getConvertLongTo(Type toType) {
+		switch(toType.getSort()) {
+			case Type.INT: return L2I; 
+			case Type.FLOAT: return L2F; 
+			case Type.DOUBLE: return L2D; 
+		}
+		return 0;
+	}
+	
+	private int getConvertFloatTo(Type toType) {
+		switch(toType.getSort()) {
+			case Type.INT: return F2I; 
+			case Type.LONG: return F2L; 
+			case Type.DOUBLE: return F2D; 
+		}
+		return 0;
+	}
+	
+	private int getConvertDoubleTo(Type toType) {
+		switch(toType.getSort()) {
+			case Type.INT: return D2I; 
+			case Type.LONG: return D2L; 
+			case Type.FLOAT: return D2F; 
+		}
+		return 0;
+	}
+	
 	private boolean fixASTORE(AbstractInsnNode s, Type type) {
 		if (type == null)
 			return false;
@@ -1097,8 +1062,8 @@ public class SecondTransformer extends BaseTransformer {
 			return false;
 		AbstractInsnNode p2 = s.getPrevious();
 		AbstractInsnNode p1 = p2.getPrevious();
-		Type t1 = getPrimitiveInstType(p1);
-		Type t2 = getPrimitiveInstType(p2);
+		Type t1 = getÚÑBytecodeType(p1);
+		Type t2 = getÚÑBytecodeType(p2);
 		if (t1 != null && t1 == t2 && t1 == Type.INT_TYPE) {
 			DebugUtils.println("unwrapping compare");
 			JumpInsnNode s1 = (JumpInsnNode) s.getNext();
