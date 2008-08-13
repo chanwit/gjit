@@ -1,5 +1,7 @@
 package minimal;
 
+import helper.Utils;
+
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
 
@@ -7,9 +9,8 @@ import junit.framework.TestCase;
 
 import org.codehaus.groovy.gjit.Optimiser;
 import org.codehaus.groovy.gjit.PreProcess;
-import org.objectweb.asm.util.TraceClassVisitor;
 
-public class AddTests extends TestCase {
+public class IntAddTests extends TestCase {
 		
 	private static Class<?> c;
 	private static byte[] out;
@@ -22,8 +23,13 @@ public class AddTests extends TestCase {
 			f.readFully(bytes);
 			PreProcess p = PreProcess.perform(bytes);
 			out = Optimiser.perform(p, bytes);
-			Utils.dump(out);
-			c = Utils.loadClass("minimal.AddSubject", out);			
+			Utils.dumpForCompare(bytes, out);
+			c = Utils.loadClass("minimal.AddSubject", out);
+			
+			RandomAccessFile f2 = new RandomAccessFile("test/minimal/AddSubject$_add_006_closure1.class","r");
+			byte[] cb = new byte[(int) f2.length()];
+			f2.readFully(cb);
+			Utils.loadClass("minimal.AddSubject$_add_006_closure1", cb);
 		} catch(Throwable e) {			
 		}			
 	}
@@ -51,10 +57,24 @@ public class AddTests extends TestCase {
 	}	
 	
 	public void test_const_add_args_wo_return() throws Throwable {		
-		Method m = c.getMethod("add_003", int.class, int.class);
+		Method m = c.getMethod("add_004", int.class, int.class);
 		Object o = c.newInstance();
 		Object result = m.invoke(o, 3, 3);
 		assertEquals(6, result);			
-	}	
-
+	}
+	
+	public void test_const_add_7_int() throws Throwable {		
+		Method m = c.getMethod("add_005");
+		Object o = c.newInstance();
+		Object result = m.invoke(o);
+		assertEquals(1+2+3+4+5+6+7, result);			
+	}
+	
+	public void test_const_add_then_loop() throws Throwable {
+		Method m = c.getMethod("add_006");
+		Object o = c.newInstance();
+		Object result = m.invoke(o);
+		assertEquals(10, result);		
+	}
+	
 }

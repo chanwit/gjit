@@ -25,4 +25,16 @@ public class AddSubject{
 		i + j
 	}
 	
+	int add_005() {
+		return 1 + 2 + 3 + 4 + 5 + 6 + 7
+	}
+	
+	int add_006() {
+		int i = 0;
+		(5+5).times {
+			i=i+1;
+		}
+		return i;
+	}
+	
 }

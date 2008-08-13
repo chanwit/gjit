@@ -16,10 +16,12 @@ import org.objectweb.asm.util.AbstractVisitor;
 public class DebugUtils {
 	
 	public static boolean debug = true;
+	public static boolean dump = false;
 	
     public static void dump(AbstractInsnNode insn) {
     	
     	if(debug == false) return;
+    	if(dump == false) return;
     	
 		int opcode = insn.getOpcode();
 		if(insn.getOpcode() != -1) System.out.print(":: " + AbstractVisitor.OPCODES[opcode]);

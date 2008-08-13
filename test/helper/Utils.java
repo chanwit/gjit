@@ -1,9 +1,11 @@
-package minimal;
+package helper;
 
+import java.io.File;
 import java.io.PrintWriter;
 
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 public class Utils {
@@ -38,5 +40,17 @@ public class Utils {
         cr = new ClassReader(bytes);
         cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), new Attribute[0], flags);
     }
+	
+	public static void dumpForCompare(byte[] orgs, byte[] bytes) throws Exception {
+        int flags = 0;
+        ClassReader cr;
+        cr = new ClassReader(bytes);
+        cr.accept(new TraceClassVisitor(new PrintWriter(new File("out.dump"))), new Attribute[0], flags);
+        CheckClassAdapter.verify(cr, false, new PrintWriter(new File("out_chk.log")));
+        ClassReader cr2;
+        cr2 = new ClassReader(orgs);
+        cr2.accept(new TraceClassVisitor(new PrintWriter(new File("in.dump"))), new Attribute[0], flags);
+        
+    }	
 	
 }
