@@ -23,6 +23,9 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.util.AbstractVisitor;
 
+import com.sun.corba.se.spi.orb.ParserImplTableBase;
+import com.sun.net.ssl.internal.ssl.Debug;
+
 public class SecondTransformer extends BaseTransformer {
 
 	private ConstantPack pack;
@@ -94,6 +97,8 @@ public class SecondTransformer extends BaseTransformer {
 				i++;
 				continue;
 			}
+			if (fix_DUP(s)) continue;
+			if (fix_POP(s)) continue;
 		}
 		DebugUtils.println("===== pre-transformed");
 		reallocateLocalVars();
@@ -114,6 +119,54 @@ public class SecondTransformer extends BaseTransformer {
 				continue;
 			}			
 		}
+	}
+
+	private boolean fix_POP(AbstractInsnNode s) {
+		if(s.getOpcode() != POP) return false;
+		AbstractInsnNode p1 = s.getPrevious();
+		AbstractInsnNode p2 = p1.getPrevious();
+		if(p2.getOpcode() == DUP2_X1) {
+			units.set(s, new InsnNode(POP2));
+			return true;
+		}
+		return false;
+	}
+
+	private boolean fix_DUP(AbstractInsnNode s) {
+		if(s.getOpcode()==DUP) {
+			AbstractInsnNode p = s.getPrevious();
+			AbstractInsnNode s1 = s.getNext();
+			AbstractInsnNode s2 = s1.getNext();
+			if(p.getOpcode()==LDC && s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
+				LdcInsnNode ldc = (LdcInsnNode)p;
+				if(ldc.cst instanceof Double || ldc.cst instanceof Long) {
+					units.remove(s);
+					units.insertBefore(s2, new InsnNode(DUP_X2));
+					units.insertBefore(s2, new InsnNode(POP));
+					units.set(s2, new InsnNode(DUP2_X1));					
+					return true;
+				}
+			} else if((p.getOpcode() == PUTFIELD || p.getOpcode() == PUTSTATIC )&&
+					s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
+				FieldInsnNode f = (FieldInsnNode)p;
+				if(f.desc.equals("D") || f.desc.equals("L")) {
+					// units.set(s, new InsnNode(DUP2));
+					units.remove(s);
+					units.insertBefore(s2, new InsnNode(DUP_X2));
+					units.insertBefore(s2, new InsnNode(POP));					
+					units.set(s2, new InsnNode(DUP2_X1));					
+					return true;
+				}
+			} else if((p.getOpcode() == DLOAD || p.getOpcode()== LLOAD) &&
+					s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {				
+					units.remove(s);
+					units.insertBefore(s2, new InsnNode(DUP_X2));
+					units.insertBefore(s2, new InsnNode(POP));					
+					units.set(s2, new InsnNode(DUP2_X1));					
+					return true;				
+			}
+		}
+		return false;
 	}
 
 	private boolean fix_XRETURN(AbstractInsnNode s) {
@@ -205,6 +258,29 @@ public class SecondTransformer extends BaseTransformer {
 					units.insertBefore(s, new InsnNode(F2D));
 					return true;
 			}			
+		}  else if(s.getOpcode() == ARETURN) {
+			DebugUtils.println(">>>>>>>> doing ARETURN");
+			AbstractInsnNode p = s.getPrevious();
+			if(p.getOpcode() == PUTFIELD) {
+				DebugUtils.println(">>>>>>>> then putfield found");
+				FieldInsnNode f = (FieldInsnNode)p;
+				if(f.desc.length()==1) {
+					DebugUtils.println(">>>>>>>> then after if f.desc");
+					switch(f.desc.charAt(0)) {
+						case 'I': box(p, Type.INT_TYPE); return true;
+						case 'L': box(p, Type.LONG_TYPE); return true;
+						case 'F': box(p, Type.FLOAT_TYPE); return true;
+						case 'D': box(p, Type.DOUBLE_TYPE); DebugUtils.println(">>>>>>>> then box D"); return true;
+					}
+				}
+			} else {
+				switch(p.getOpcode()) {
+					case ILOAD: box(p, Type.INT_TYPE); return true; 
+					case LLOAD: box(p, Type.LONG_TYPE); return true; 
+					case FLOAD: box(p, Type.FLOAT_TYPE); return true; 
+					case DLOAD: box(p, Type.DOUBLE_TYPE); return true; 
+				}
+			}
 		}
 		return false;
 	}
@@ -842,7 +918,8 @@ public class SecondTransformer extends BaseTransformer {
 			DebugUtils.println(">>> pass $const$");
 			DebugUtils.println(f.name);
 			Object constValue = pack.get(f.name);
-			AbstractInsnNode newS = new LdcInsnNode(constValue);
+			DebugUtils.println("const type: " + constValue.getClass());
+			AbstractInsnNode newS = new LdcInsnNode(constValue);			
 			if (constValue instanceof Integer) {
 				int c = (Integer) constValue;
 				if (c >= -1 && c <= 5) {
