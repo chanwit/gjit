@@ -65,14 +65,13 @@ public class SecondTransformer extends BaseTransformer {
 		int i = -1;
 		while (true) {
 			i++;
-			System.out.println(i);
 			if (i >= units.size())
 				break;
 			AbstractInsnNode s = units.get(i);
 			DebugUtils.dump(s);
 			if (extractCallSiteName(s)) continue;
 			recordUnusedCallSite(s);
-			if (earlyUnwrapBinOp(s)) continue;
+			if (unwrapBinOp(s)) continue;
 			if (eliminateBoxCastUnbox(s)) {
 				i--;
 				continue;
@@ -139,11 +138,11 @@ public class SecondTransformer extends BaseTransformer {
 		if(s.getOpcode() != POP) return false;
 		AbstractInsnNode p1 = s.getPrevious();
 		AbstractInsnNode p2 = p1.getPrevious();
-		DebugUtils.dump = true;
-		DebugUtils.dump(p2);
-		DebugUtils.dump(p1);
-		DebugUtils.dump(s);
-		DebugUtils.dump = false;
+//		DebugUtils.dump = true;
+//		DebugUtils.dump(p2);
+//		DebugUtils.dump(p1);
+//		DebugUtils.dump(s);
+//		DebugUtils.dump = false;
 		if(p2.getOpcode() == DUP2_X1) {
 			units.set(s, new InsnNode(POP2));
 			return true;
@@ -197,9 +196,9 @@ public class SecondTransformer extends BaseTransformer {
 	private boolean fix_XRETURN(AbstractInsnNode s) {
 		if(s.getOpcode() >= IRETURN && s.getOpcode() <= DRETURN) {
 			AbstractInsnNode p = s.getPrevious();
-			DebugUtils.dump = true;
-			DebugUtils.dump(p);
-			DebugUtils.dump = false;
+//			DebugUtils.dump = true;
+//			DebugUtils.dump(p);
+//			DebugUtils.dump = false;
 			int opcode = getConverterOpCode(getÚÑBytecodeType(p), getÚÑBytecodeType(s));
 			if(opcode != 0) {
 				units.insertBefore(s, new InsnNode(opcode));
@@ -341,7 +340,7 @@ public class SecondTransformer extends BaseTransformer {
 		}
 	}
 
-	private boolean earlyUnwrapBinOp(AbstractInsnNode s) {
+	private boolean unwrapBinOp(AbstractInsnNode s) {
 		if (s.getOpcode() == INVOKESTATIC) {
 			MethodInsnNode iv = ((MethodInsnNode) s);
 			if (iv.owner.equals(CALL_SITE_INTERFACE) == false)
@@ -675,10 +674,10 @@ public class SecondTransformer extends BaseTransformer {
 						unbox(newS, t);
 					}
 				} else if(getÚÑBytecodeType(p) != getÚÑBytecodeType(newS)) {
-					DebugUtils.dump = true;
-					DebugUtils.dump(p);
-					DebugUtils.dump(newS);
-					DebugUtils.dump = false;					
+//					DebugUtils.dump = true;
+//					DebugUtils.dump(p);
+//					DebugUtils.dump(newS);
+//					DebugUtils.dump = false;					
 					int converterOpcode = getConverterOpCode(getÚÑBytecodeType(p),getÚÑBytecodeType(newS));
 					if(converterOpcode != 0) {
 						InsnNode converter = new InsnNode(converterOpcode);
