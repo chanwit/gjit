@@ -65,6 +65,7 @@ public class SecondTransformer extends BaseTransformer {
 		int i = -1;
 		while (true) {
 			i++;
+			System.out.println(i);
 			if (i >= units.size())
 				break;
 			AbstractInsnNode s = units.get(i);
@@ -89,15 +90,24 @@ public class SecondTransformer extends BaseTransformer {
 				i--;
 				continue;
 			}
-			if (fixALOAD(s)) continue;
-			if (fixASTORE(s)) continue;
+			if (fixALOAD(s)) {
+				i--;
+				continue;
+			}
+			if (fixASTORE(s)) {
+				i--;
+				continue;
+			}
 			if (fixHasNext(s)) continue;
 			if (fixAASTORE(s)) continue;
 			if (fix_XRETURN(s)) {
 				i++;
 				continue;
 			}
-			if (fix_DUP(s)) continue;
+			if (fix_DUP(s)) {
+				i--;
+				continue;
+			}
 			if (fix_POP(s)) continue;
 		}
 		DebugUtils.println("===== pre-transformed");
@@ -110,14 +120,18 @@ public class SecondTransformer extends BaseTransformer {
 			if (i >= units.size())
 				break;
 			AbstractInsnNode s = units.get(i);
-			if (earlyCorrectCall(s)) {
+			if (correctCall(s)) {
 				i = units.indexOf(s);
 				continue;
 			}
-			if (earlyCorrectSBAMethods(s)) {
+			if (correctSBAMethods(s)) {
 				i = units.indexOf(s);
 				continue;
-			}			
+			}
+			if (fix_POP(s)) {
+				i = units.indexOf(s);
+				continue;			
+			}
 		}
 	}
 
@@ -125,9 +139,20 @@ public class SecondTransformer extends BaseTransformer {
 		if(s.getOpcode() != POP) return false;
 		AbstractInsnNode p1 = s.getPrevious();
 		AbstractInsnNode p2 = p1.getPrevious();
+		DebugUtils.dump = true;
+		DebugUtils.dump(p2);
+		DebugUtils.dump(p1);
+		DebugUtils.dump(s);
+		DebugUtils.dump = false;
 		if(p2.getOpcode() == DUP2_X1) {
 			units.set(s, new InsnNode(POP2));
 			return true;
+		} else if(p2.getOpcode() == DUP2 && getÚÑBytecodeType(p1).getSize()==2) {
+			units.set(s, new InsnNode(POP2));
+			return true;			
+		} else if(p1.getOpcode() == DLOAD || p1.getOpcode() == LLOAD) {
+			units.set(s, new InsnNode(POP2));
+			return true;						
 		}
 		return false;
 	}
@@ -233,7 +258,7 @@ public class SecondTransformer extends BaseTransformer {
 		DebugUtils.println(use.size());
 	}
 
-	private boolean earlyCorrectSBAMethods(AbstractInsnNode s) {
+	private boolean correctSBAMethods(AbstractInsnNode s) {
 		if (s.getOpcode() != INVOKESTATIC)
 			return false;
 		MethodInsnNode iv = ((MethodInsnNode) s);
@@ -241,20 +266,12 @@ public class SecondTransformer extends BaseTransformer {
 			return false;
 		if (iv.name.equals("unwrap"))
 			return false;
-		DebugUtils.println(">>> === earlyCorrectSBAMethods at " + s);
-		// special case 1: 1 "call", all others are not
-		// AbstractInsnNode s0 = findStartingInsn(iv);
-		// DebugUtils.print("SBA debug --- >> findStartingInsn " + s0);
-		// DebugUtils.dump(s0);
+		DebugUtils.println(">>> === correctSBAMethods at " + s);
 		fixByArguments_specialCase1(iv);
 		return true;
 	}
 
-	// private boolean earlyCorrectCompare(AbstractInsnNode s) {
-	// // TODO Auto-generated method stub
-	// return false;
-	// }
-	private boolean earlyCorrectCall(AbstractInsnNode s) {
+	private boolean correctCall(AbstractInsnNode s) {
 		if (s.getOpcode() != INVOKEINTERFACE)
 			return false;
 		MethodInsnNode iv = ((MethodInsnNode) s);
@@ -262,8 +279,18 @@ public class SecondTransformer extends BaseTransformer {
 			return false;
 		if (iv.name.startsWith("call") == false)
 			return false;
-		DebugUtils.println(">>> === earlyCorrectCall");
+		DebugUtils.println(">>> === correctCall");
 		fixByArguments_specialCase1(iv);
+		AbstractInsnNode s1 = s.getNext();
+		if(s1.getOpcode() == DUP) s1 = s1.getNext();
+		Type t = getÚÑBytecodeType(s1);
+		if(t!=null) {
+			s1 = s.getNext(); // re-check
+			unbox(s1, t);
+			if(s1.getOpcode() == DUP && t.getSize()==2) {
+				units.set(s1, new InsnNode(DUP2));
+			}
+		}
 		return true;
 	}
 
@@ -787,15 +814,15 @@ public class SecondTransformer extends BaseTransformer {
 			primTypeName = "double";
 			break;
 		}
-		TypeInsnNode tnode = new TypeInsnNode(CHECKCAST, boxType);
+		TypeInsnNode cast = new TypeInsnNode(CHECKCAST, boxType);
 		MethodInsnNode iv = new MethodInsnNode(INVOKEVIRTUAL, boxType,
 				primTypeName + "Value", "()" + primType);
 		AbstractInsnNode p = s.getPrevious();
 		if (p instanceof LabelNode) {
 			s = p;
 		}
-		units.insertBefore(s, tnode);
-		units.insert(tnode, iv);
+		units.insertBefore(s, cast);
+		units.insert(cast, iv);
 	}
 
 	private boolean extractCallSiteName(AbstractInsnNode s) {
@@ -1072,17 +1099,70 @@ public class SecondTransformer extends BaseTransformer {
 		AbstractInsnNode p1 = p2.getPrevious();
 		Type t1 = getÚÑBytecodeType(p1);
 		Type t2 = getÚÑBytecodeType(p2);
-		// TODO doing type promotion
-		if (t1 != null && t1 == t2 && t1 == Type.INT_TYPE) {
-			DebugUtils.println("unwrapping compare");
-			JumpInsnNode s1 = (JumpInsnNode) s.getNext();
-			ComparingMethod compare;
-			try {
-				compare = ComparingMethod.valueOf(m.name);
-			} catch (IllegalArgumentException e) {
-				return false;
+		if(t1 == null || t2 == null) return false;
+
+		Type fromType = null;
+		Type toType = null;
+		AbstractInsnNode whereToInsert = null;
+		Type promotedType=null;		
+		// TODO doing type promotion		
+		if(t1.getSort() != t2.getSort()) {
+			if(t1.getSort() < t2.getSort()) {
+				fromType = t1;
+				toType = t2;
+				whereToInsert = p1;
+				promotedType = t2;
+			} else if(t2.getSort() < t1.getSort()) {
+				fromType = t2;
+				toType = t1;
+				whereToInsert = p2;
+				promotedType = t1;
 			}
-			switch (compare) {
+			InsnNode converter = new InsnNode(getConverterOpCode(fromType, toType));
+			units.insert(whereToInsert, converter);
+		} else {
+			promotedType = t1;
+		}
+		ComparingMethod compare;
+		try {
+			compare = ComparingMethod.valueOf(m.name);
+		} catch (IllegalArgumentException e) {
+			return false;
+		}		
+		switch(promotedType.getSort()) {
+			case Type.INT: convertCompareForInt(compare, s); break; 
+			case Type.LONG: convertCompare(LCMP, compare, s); break;
+			case Type.FLOAT: convertCompare(FCMPL, compare, s); break;
+			case Type.DOUBLE: convertCompare(DCMPL, compare, s); break;
+			default: return false;
+		}
+		return true;
+	}
+
+	private void convertCompare(int opcode, ComparingMethod compare,
+			AbstractInsnNode s) {
+		JumpInsnNode s1 = (JumpInsnNode) s.getNext();
+		units.set(s, new InsnNode(opcode));		
+		switch (compare) {
+			case compareGreaterThan:
+				units.set(s1, new JumpInsnNode(IFLE, s1.label));
+				break;
+			case compareGreaterThanEqual:
+				units.set(s1, new JumpInsnNode(IFLT, s1.label));
+				break;
+			case compareLessThan:
+				units.set(s1, new JumpInsnNode(IFGE, s1.label));
+				break;
+			case compareLessThanEqual:
+				units.set(s1, new JumpInsnNode(IFGT, s1.label));
+				break;
+		}		
+	}
+
+	private void convertCompareForInt(ComparingMethod compare,
+			AbstractInsnNode s) {
+		JumpInsnNode s1 = (JumpInsnNode) s.getNext();		
+		switch (compare) {
 			case compareGreaterThan:
 				units.set(s1, new JumpInsnNode(IF_ICMPLE, s1.label));
 				break;
@@ -1095,11 +1175,8 @@ public class SecondTransformer extends BaseTransformer {
 			case compareLessThanEqual:
 				units.set(s1, new JumpInsnNode(IF_ICMPGT, s1.label));
 				break;
-			}
-			units.remove(s);
-			return true;
 		}
-		return false;
+		units.remove(s);		
 	}
 
 }

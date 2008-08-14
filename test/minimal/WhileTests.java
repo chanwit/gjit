@@ -33,13 +33,13 @@ public class WhileTests extends TestCase {
 		Method m = c.getMethod("while_001");
 		Object o = c.newInstance();
 		Object result = m.invoke(o);
-		assertEquals(0, result);
+		assertEquals(-1, result);
 	}
 	
 	public void testWhile_with_double() throws Throwable {
 		Method m = c.getMethod("while_002");
 		Object o = c.newInstance();
 		Object result = m.invoke(o);
-		assertEquals(0, result);
+		assertEquals(-1.0D, result);
 	}	
 }
