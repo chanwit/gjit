@@ -291,7 +291,6 @@ public class SecondTransformer extends BaseTransformer {
                 units.set(s1, new InsnNode(DUP2));
             }
         }
-
     }
 
     private AbstractInsnNode findStartingInsn(MethodInsnNode s) {
