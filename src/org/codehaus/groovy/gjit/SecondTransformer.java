@@ -267,6 +267,7 @@ public class SecondTransformer extends BaseTransformer {
             return false;
         DebugUtils.println(">>> === correctSBAMethods at " + s);
         fixByArguments_specialCase1(iv);
+        unboxForCorrectCall(s);
         return true;
     }
 
@@ -280,6 +281,11 @@ public class SecondTransformer extends BaseTransformer {
             return false;
         DebugUtils.println(">>> === correctCall");
         fixByArguments_specialCase1(iv);
+        unboxForCorrectCall(s);
+        return true;
+    }
+
+    private void unboxForCorrectCall(AbstractInsnNode s) {
         AbstractInsnNode s1 = s.getNext();
         if(s1.getOpcode() == DUP) s1 = s1.getNext();
         Type t = getBytecodeType(s1);
@@ -290,7 +296,6 @@ public class SecondTransformer extends BaseTransformer {
                 units.set(s1, new InsnNode(DUP2));
             }
         }
-        return true;
     }
 
     private AbstractInsnNode findStartingInsn(MethodInsnNode s) {
@@ -842,7 +847,7 @@ public class SecondTransformer extends BaseTransformer {
         }
         TypeInsnNode cast = new TypeInsnNode(CHECKCAST, boxType);
         MethodInsnNode iv = new MethodInsnNode(INVOKEVIRTUAL, boxType,
-                primTypeName + "Value", "()" + primType);
+            primTypeName + "Value", "()" + primType);
         AbstractInsnNode p = s.getPrevious();
         if (p instanceof LabelNode) {
             s = p;

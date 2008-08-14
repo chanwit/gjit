@@ -165,8 +165,18 @@ public class SimpleInterpreter implements Opcodes {
     }
 
     private void execute0(JumpInsnNode insn) {
-        DebugUtils.dump(insn);
-        throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
+        switch(insn.getOpcode()) {
+            case IFEQ:
+            case IFNE:
+            case IFGE:
+            case IFGT:
+            case IFLE:
+            case IFLT:
+                used.put(insn, new AbstractInsnNode[]{pop().source});
+                break;
+        }
+//        DebugUtils.dump(insn);
+//        throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
     }
 
     private void execute0(LdcInsnNode insn) {
@@ -296,11 +306,39 @@ public class SimpleInterpreter implements Opcodes {
                 push(new DefValue(insn, Type.LONG_TYPE));
                 }
                 break;
+            case DADD:
+            case DSUB:
+            case DMUL:
+            case DDIV: {
+                DefValue arg1 = pop();
+                DefValue arg0 = pop();
+                used.put(insn, new AbstractInsnNode[]{arg0.source, arg1.source});
+                push(new DefValue(insn, Type.DOUBLE_TYPE));
+                }
+                break;
+            case FADD:
+            case FSUB:
+            case FMUL:
+            case FDIV: {
+                DefValue arg1 = pop();
+                DefValue arg0 = pop();
+                used.put(insn, new AbstractInsnNode[]{arg0.source, arg1.source});
+                push(new DefValue(insn, Type.FLOAT_TYPE));
+                }
+                break;
             case ACONST_NULL:
                 push(new DefValue(insn, Type.VOID_TYPE));
                 break;
             case RETURN:
                 break;
+            case DCMPG:
+            case DCMPL: {
+                DefValue arg1 = pop();
+                DefValue arg0 = pop();
+                used.put(insn, new AbstractInsnNode[] { arg0.source, arg1.source });
+                push(new DefValue(insn, Type.INT_TYPE));
+            }
+            break;
             default:
                 throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
         }
