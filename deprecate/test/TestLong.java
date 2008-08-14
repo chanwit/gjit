@@ -9,6 +9,10 @@ public class TestLong {
 		long j2 = ((Long)j).longValue();
 		int i = (int) j2;
 		System.out.println(i);
-		//GeneratorAdapter
+		double a=10;
+		double n=30;
+		while(a >= n) {
+			System.out.println(i);
+		}
 	}
 }
