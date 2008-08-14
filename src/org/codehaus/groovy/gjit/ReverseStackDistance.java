@@ -9,13 +9,13 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 public class ReverseStackDistance implements Opcodes {
 
-	private MethodInsnNode start;
-	private int stacks = 0;
+    private MethodInsnNode start;
+    private int stacks = 0;
 
-	public ReverseStackDistance(MethodInsnNode s) {
-		this.start = s;
-	}
-	
+    public ReverseStackDistance(MethodInsnNode s) {
+        this.start = s;
+    }
+
     private final int[] STACK_SIZE = {
             0, // nop, 0
             1, // aconst_null, 1
@@ -221,70 +221,70 @@ public class ReverseStackDistance implements Opcodes {
             1 // jsr_w, 201
         };
 
-    
+
     private int argStackSize(String d) {
-    	DebugUtils.println("arg stack size" + d);
-		Type[] argTypes = Type.getArgumentTypes(d);
-		//sysout
-		int growth=0;
-		for(int i=0;i<argTypes.length; i++) {
-			growth = growth + argTypes[i].getSize();
-		}    	
-		return growth;
+        DebugUtils.println("arg stack size" + d);
+        Type[] argTypes = Type.getArgumentTypes(d);
+        //sysout
+        int growth=0;
+        for(int i=0;i<argTypes.length; i++) {
+            growth = growth + argTypes[i].getSize();
+        }
+        return growth;
     }
-    
+
     private int retStackSize(String d) {
-		Type retType = Type.getReturnType(d);
-		if(retType == Type.VOID_TYPE) return 0;
-		return retType.getSize();
+        Type retType = Type.getReturnType(d);
+        if(retType == Type.VOID_TYPE) return 0;
+        return retType.getSize();
     }
-    
-	public AbstractInsnNode findStartingNode() {
-		int growth = argStackSize(start.desc);		
-		if(start.getOpcode() == INVOKESTATIC) {
-			stacks = growth;
-		} else {
-			stacks = growth + 1; // include obj ref
-		}
-		AbstractInsnNode p = start;
-		while(stacks != 0) {
-			p = p.getPrevious();
-			switch(p.getOpcode()) {
-				case LDC:
-					Object cst = ((LdcInsnNode)p).cst;
-					if(cst instanceof Long || cst instanceof Double) {
-						stacks -= 2;
-					} else {
-						stacks -= 1;
-					}
-					break;
-	            case GETSTATIC:
-	            case PUTSTATIC:
-	            case GETFIELD:
-	            case PUTFIELD:	
-	            	stacks -= Type.getType(((FieldInsnNode)p).desc).getSize();	            	
-	            	break;
-	            case INVOKEINTERFACE:
-	            case INVOKESPECIAL:
-	            case INVOKEVIRTUAL:
-	            	growth = retStackSize(((MethodInsnNode)p).desc) - (1 + argStackSize(((MethodInsnNode)p).desc));
-	            	stacks -= growth;
-	            	break;
-	            case INVOKESTATIC:
-	            	DebugUtils.print(((MethodInsnNode)p).name);
-	            	DebugUtils.println(((MethodInsnNode)p).desc);
-	            	growth = retStackSize(((MethodInsnNode)p).desc) - argStackSize(((MethodInsnNode)p).desc);
-	            	stacks -= growth;
-	            	break;
-	            default:
-	            	// - because reverse
-	            	if(p.getOpcode()!=-1) {
-	            		stacks -= STACK_SIZE[p.getOpcode()];
-	            	}
-	            	break;
-			}
-		}
-		return p;
-	}
+
+    public AbstractInsnNode findStartingNode() {
+        int growth = argStackSize(start.desc);
+        if(start.getOpcode() == INVOKESTATIC) {
+            stacks = growth;
+        } else {
+            stacks = growth + 1; // include obj ref
+        }
+        AbstractInsnNode p = start;
+        while(stacks != 0) {
+            p = p.getPrevious();
+            switch(p.getOpcode()) {
+                case LDC:
+                    Object cst = ((LdcInsnNode)p).cst;
+                    if(cst instanceof Long || cst instanceof Double) {
+                        stacks -= 2;
+                    } else {
+                        stacks -= 1;
+                    }
+                    break;
+                case GETSTATIC:
+                case PUTSTATIC:
+                case GETFIELD:
+                case PUTFIELD:
+                    stacks -= Type.getType(((FieldInsnNode)p).desc).getSize();
+                    break;
+                case INVOKEINTERFACE:
+                case INVOKESPECIAL:
+                case INVOKEVIRTUAL:
+                    growth = retStackSize(((MethodInsnNode)p).desc) - (1 + argStackSize(((MethodInsnNode)p).desc));
+                    stacks -= growth;
+                    break;
+                case INVOKESTATIC:
+                    DebugUtils.print(((MethodInsnNode)p).name);
+                    DebugUtils.println(((MethodInsnNode)p).desc);
+                    growth = retStackSize(((MethodInsnNode)p).desc) - argStackSize(((MethodInsnNode)p).desc);
+                    stacks -= growth;
+                    break;
+                default:
+                    // - because reverse
+                    if(p.getOpcode()!=-1) {
+                        stacks -= STACK_SIZE[p.getOpcode()];
+                    }
+                    break;
+            }
+        }
+        return p;
+    }
 
 }

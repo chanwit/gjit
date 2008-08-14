@@ -47,7 +47,7 @@ import org.objectweb.asm.tree.analysis.Value;
 
 /**
  * An {@link Interpreter} for {@link BasicValue} values.
- * 
+ *
  * @author Eric Bruneton
  * @author Bing Ran
  */

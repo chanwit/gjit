@@ -3,6 +3,6 @@ import java.util.HashMap;
 
 public class ConstantPack extends HashMap<String, Object>  {
 
-	private static final long serialVersionUID = 1L;	
-	
+    private static final long serialVersionUID = 1L;
+
 }

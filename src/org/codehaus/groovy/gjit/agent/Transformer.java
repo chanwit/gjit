@@ -12,57 +12,57 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 
 public class Transformer implements ClassFileTransformer {
-				
-	public Transformer() {
-		super();
-	}
 
-	public byte[] transform(ClassLoader loader, String className,
-			Class<?> classBeingRedefined, ProtectionDomain protectionDomain,
-			byte[] classfileBuffer) throws IllegalClassFormatException {
-		//
-		// check the condition which class is going to be transform
-		// do transformation
-		//
-		if(className.equals("groovy/lang/MetaClassImpl")) {
-			return instrumentingMetaClass(classfileBuffer);
-		}else if(className.equals("org/codehaus/groovy/runtime/callsite/CallSiteArray")) {
-			return instrumentingCallSiteArray(classfileBuffer);
-		} else if(className.startsWith("java") || className.startsWith("sun") || className.startsWith("soot")) {
-			return classfileBuffer;
-		} else {
-			return optimisingGroovyClass(classfileBuffer);
-		}		
-	}
+    public Transformer() {
+        super();
+    }
 
-	private byte[] optimisingGroovyClass(byte[] classfileBuffer) {
-		try {
-			PreProcess cv = PreProcess.perform(classfileBuffer);
-			if(cv.isGroovyClassFile()==false) {
-				return classfileBuffer;
-			} else { // if it's a groovy compiled class, try optimising 
-				return Optimiser.perform(cv, classfileBuffer);
-			}
-		} catch(Throwable e) {
-			e.printStackTrace();
-			return classfileBuffer;
-		}
-	}
-	
-	private byte[] instrumentingCallSiteArray(byte[] classfileBuffer) {
-		ClassReader cr = new ClassReader(classfileBuffer);
-		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-		CallSiteArrayInstrumentor csai = new CallSiteArrayInstrumentor(cw);
-		cr.accept(csai, 0);
-		return cw.toByteArray();	
-	}
+    public byte[] transform(ClassLoader loader, String className,
+            Class<?> classBeingRedefined, ProtectionDomain protectionDomain,
+            byte[] classfileBuffer) throws IllegalClassFormatException {
+        //
+        // check the condition which class is going to be transform
+        // do transformation
+        //
+        if(className.equals("groovy/lang/MetaClassImpl")) {
+            return instrumentingMetaClass(classfileBuffer);
+        }else if(className.equals("org/codehaus/groovy/runtime/callsite/CallSiteArray")) {
+            return instrumentingCallSiteArray(classfileBuffer);
+        } else if(className.startsWith("java") || className.startsWith("sun") || className.startsWith("soot")) {
+            return classfileBuffer;
+        } else {
+            return optimisingGroovyClass(classfileBuffer);
+        }
+    }
 
-	private byte[] instrumentingMetaClass(byte[] classfileBuffer) {		
-		ClassReader cr = new ClassReader(classfileBuffer);
-		ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-		MetaClassInstumentor mci = new MetaClassInstumentor(cw);
-		cr.accept(mci, 0);
-		return cw.toByteArray();
-	}
+    private byte[] optimisingGroovyClass(byte[] classfileBuffer) {
+        try {
+            PreProcess cv = PreProcess.perform(classfileBuffer);
+            if(cv.isGroovyClassFile()==false) {
+                return classfileBuffer;
+            } else { // if it's a groovy compiled class, try optimising
+                return Optimiser.perform(cv, classfileBuffer);
+            }
+        } catch(Throwable e) {
+            e.printStackTrace();
+            return classfileBuffer;
+        }
+    }
+
+    private byte[] instrumentingCallSiteArray(byte[] classfileBuffer) {
+        ClassReader cr = new ClassReader(classfileBuffer);
+        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+        CallSiteArrayInstrumentor csai = new CallSiteArrayInstrumentor(cw);
+        cr.accept(csai, 0);
+        return cw.toByteArray();
+    }
+
+    private byte[] instrumentingMetaClass(byte[] classfileBuffer) {
+        ClassReader cr = new ClassReader(classfileBuffer);
+        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+        MetaClassInstumentor mci = new MetaClassInstumentor(cw);
+        cr.accept(mci, 0);
+        return cw.toByteArray();
+    }
 
 }

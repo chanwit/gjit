@@ -5,22 +5,22 @@ import org.objectweb.asm.tree.analysis.Value;
 
 public class NaryOperationException extends AnalyzerException {
 
-	private int index;
+    private int index;
 
-	public int getIndex() {
-		return index;
-	}
+    public int getIndex() {
+        return index;
+    }
 
-	public NaryOperationException(int index, Object expected, Value encountered) {
-		super("", expected, encountered);
-		this.index = index;
-	}
+    public NaryOperationException(int index, Object expected, Value encountered) {
+        super("", expected, encountered);
+        this.index = index;
+    }
 
-	private static final long serialVersionUID = -561052802465541043L;
+    private static final long serialVersionUID = -561052802465541043L;
 
-	@Override
-	public synchronized Throwable fillInStackTrace() {
-		return null;
-	}
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return null;
+    }
 
 }
