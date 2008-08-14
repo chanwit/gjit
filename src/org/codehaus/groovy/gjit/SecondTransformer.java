@@ -127,6 +127,10 @@ public class SecondTransformer extends BaseTransformer {
                 i = units.indexOf(s);
                 continue;
             }
+            if (fix_DUP(s)) {
+                i = units.indexOf(s);
+                continue;
+            }
             if (fix_POP(s)) {
                 i = units.indexOf(s);
                 continue;
@@ -157,37 +161,20 @@ public class SecondTransformer extends BaseTransformer {
     }
 
     private boolean fix_DUP(AbstractInsnNode s) {
-        if(s.getOpcode()==DUP) {
+        if(s.getOpcode()==DUP || s.getOpcode()==DUP2) {
             AbstractInsnNode p = s.getPrevious();
             AbstractInsnNode s1 = s.getNext();
             AbstractInsnNode s2 = s1.getNext();
-            if(p.getOpcode()==LDC && s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
-                LdcInsnNode ldc = (LdcInsnNode)p;
-                if(ldc.cst instanceof Double || ldc.cst instanceof Long) {
+            if(s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
+                Type t = getBytecodeType(p);
+                if(t==null && s.getOpcode()==DUP) return false;
+                if((t != null && t.getSize() == 2) || s.getOpcode() == DUP2) {
                     units.remove(s);
                     units.insertBefore(s2, new InsnNode(DUP_X2));
                     units.insertBefore(s2, new InsnNode(POP));
                     units.set(s2, new InsnNode(DUP2_X1));
                     return true;
                 }
-            } else if((p.getOpcode() == PUTFIELD || p.getOpcode() == PUTSTATIC )&&
-                    s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
-                FieldInsnNode f = (FieldInsnNode)p;
-                if(f.desc.equals("D") || f.desc.equals("L")) {
-                    // units.set(s, new InsnNode(DUP2));
-                    units.remove(s);
-                    units.insertBefore(s2, new InsnNode(DUP_X2));
-                    units.insertBefore(s2, new InsnNode(POP));
-                    units.set(s2, new InsnNode(DUP2_X1));
-                    return true;
-                }
-            } else if((p.getOpcode() == DLOAD || p.getOpcode()== LLOAD) &&
-                    s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
-                    units.remove(s);
-                    units.insertBefore(s2, new InsnNode(DUP_X2));
-                    units.insertBefore(s2, new InsnNode(POP));
-                    units.set(s2, new InsnNode(DUP2_X1));
-                    return true;
             }
         }
         return false;
@@ -289,6 +276,14 @@ public class SecondTransformer extends BaseTransformer {
         AbstractInsnNode s1 = s.getNext();
         if(s1.getOpcode() == DUP) s1 = s1.getNext();
         Type t = getBytecodeType(s1);
+        if(t == null) {
+            // try again looking for sequence of ALOAD, SWAP, XX
+            AbstractInsnNode s2 = s1.getNext();
+            AbstractInsnNode s3 = s2.getNext();
+            if(s1.getOpcode()==ALOAD && s2.getOpcode() == SWAP) {
+                t = getBytecodeType(s3);
+            }
+        }
         if(t!=null) {
             s1 = s.getNext(); // re-check
             unbox(s1, t);
@@ -296,6 +291,7 @@ public class SecondTransformer extends BaseTransformer {
                 units.set(s1, new InsnNode(DUP2));
             }
         }
+
     }
 
     private AbstractInsnNode findStartingInsn(MethodInsnNode s) {
@@ -451,7 +447,7 @@ public class SecondTransformer extends BaseTransformer {
 
     private Type getBytecodeType(AbstractInsnNode op) {
         int opcode = op.getOpcode();
-        if (opcode == GETFIELD || opcode == GETSTATIC) {
+        if (opcode == GETFIELD || opcode == GETSTATIC || opcode == PUTFIELD || opcode == PUTSTATIC) {
             Type t = Type.getType(((FieldInsnNode) op).desc);
             if (t.getSort() == Type.OBJECT || t.getSort() == Type.ARRAY)
                 return null;
