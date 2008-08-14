@@ -412,6 +412,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == IMUL 
 				|| opcode == IDIV
 				|| opcode == IRETURN
+				|| opcode == ISTORE
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Integer))
 			return Type.INT_TYPE;
 		if (opcode == LLOAD 
@@ -423,6 +424,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == LMUL 
 				|| opcode == LDIV
 				|| opcode == LRETURN
+				|| opcode == LSTORE
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Long))
 			return Type.LONG_TYPE;
 		if (opcode == FLOAD 
@@ -434,6 +436,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == FMUL 
 				|| opcode == FDIV
 				|| opcode == FRETURN
+				|| opcode == FSTORE
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Float))
 			return Type.FLOAT_TYPE;
 		if (opcode == DLOAD 
@@ -445,6 +448,7 @@ public class SecondTransformer extends BaseTransformer {
 				|| opcode == DMUL 
 				|| opcode == DDIV
 				|| opcode == DRETURN
+				|| opcode == DSTORE
 				|| (opcode == LDC && ((LdcInsnNode) op).cst instanceof Double))
 			return Type.DOUBLE_TYPE;
 		return null;
@@ -630,8 +634,12 @@ public class SecondTransformer extends BaseTransformer {
 					if (iv.name.equals("call") && iv.desc.equals(CALL_SITE_BIN_SIGNATURE)) {
 						unbox(newS, t);
 					}
-				} else if(getÚÑBytecodeType(p) != getÚÑBytecodeType(s)) {
-					int converterOpcode = getConverterOpCode(getÚÑBytecodeType(p),getÚÑBytecodeType(s));
+				} else if(getÚÑBytecodeType(p) != getÚÑBytecodeType(newS)) {
+					DebugUtils.dump = true;
+					DebugUtils.dump(p);
+					DebugUtils.dump(newS);
+					DebugUtils.dump = false;					
+					int converterOpcode = getConverterOpCode(getÚÑBytecodeType(p),getÚÑBytecodeType(newS));
 					InsnNode converter = new InsnNode(converterOpcode);
 					units.insertBefore(newS, converter);
 				}
@@ -1064,6 +1072,7 @@ public class SecondTransformer extends BaseTransformer {
 		AbstractInsnNode p1 = p2.getPrevious();
 		Type t1 = getÚÑBytecodeType(p1);
 		Type t2 = getÚÑBytecodeType(p2);
+		// TODO doing type promotion
 		if (t1 != null && t1 == t2 && t1 == Type.INT_TYPE) {
 			DebugUtils.println("unwrapping compare");
 			JumpInsnNode s1 = (JumpInsnNode) s.getNext();
