@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package minimal
 
@@ -10,13 +10,13 @@ package minimal
  *
  */
 public class PreprocessSubject{
-	
-	def mymethod() {
-		
-	}
 
-	static main(arg) {
-		println "test"
-	}
-	
+  def mymethod() {
+
+  }
+
+  static main(arg) {
+    println "test"
+  }
+
 }
