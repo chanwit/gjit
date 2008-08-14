@@ -39,7 +39,7 @@ import org.objectweb.asm.tree.analysis.*;
  * An extended {@link BasicVerifier} that performs more precise verifications.
  * This verifier computes exact class types, instead of using a single "object
  * reference" type (as done in the {@link BasicVerifier}).
- * 
+ *
  * @author Eric Bruneton
  * @author Bing Ran
  */
@@ -75,7 +75,7 @@ public class SimpleVerifier extends BasicVerifier {
     /**
      * Constructs a new {@link SimpleVerifier} to verify a specific class. This
      * class will not be loaded into the JVM since it may be incorrect.
-     * 
+     *
      * @param currentClass the class that is verified.
      * @param currentSuperClass the super class of the class that is verified.
      * @param isInterface if the class that is verified is an interface.
@@ -91,7 +91,7 @@ public class SimpleVerifier extends BasicVerifier {
     /**
      * Constructs a new {@link SimpleVerifier} to verify a specific class. This
      * class will not be loaded into the JVM since it may be incorrect.
-     * 
+     *
      * @param currentClass the class that is verified.
      * @param currentSuperClass the super class of the class that is verified.
      * @param currentClassInterfaces the interfaces implemented by the class
@@ -173,7 +173,7 @@ public class SimpleVerifier extends BasicVerifier {
                 return type == expectedType;
             case Type.ARRAY:
             case Type.OBJECT:
-            	if (type == null) return true;
+                if (type == null) return true;
                 if ("Lnull;".equals(type.getDescriptor())) {
                     return true;
                 } else if (type.getSort() == Type.OBJECT
@@ -275,17 +275,17 @@ public class SimpleVerifier extends BasicVerifier {
 
     protected Class<?> getClass(final Type t) {
             if (t.getSort() == Type.ARRAY) {
-            	try {
-            		return Class.forName(t.getDescriptor().replace('/', '.'));
-            	} catch(ClassNotFoundException e) {
-            		return Object[].class;
-            	}
+                try {
+                    return Class.forName(t.getDescriptor().replace('/', '.'));
+                } catch(ClassNotFoundException e) {
+                    return Object[].class;
+                }
             }
-        try {            
+        try {
             return Class.forName(t.getClassName());
         } catch (ClassNotFoundException e) {
-        	//throw new RuntimeException(e.toString());
-        	return java.lang.Object.class;
+            //throw new RuntimeException(e.toString());
+            return java.lang.Object.class;
         }
     }
 }

@@ -51,7 +51,7 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
  * RET instructions are valid.</i>
- * 
+ *
  * @author Eric Bruneton
  * @author Chanwit Kaewkasi
  */
@@ -70,27 +70,27 @@ public class Analyzer implements Opcodes {
 
     /**
      * Constructs a new {@link Analyzer}.
-     * 
+     *
      * @param interpreter the interpreter to be used to symbolically interpret
      *        the bytecode instructions.
      */
     public Analyzer(final Interpreter interpreter) {
         this.interpreter = interpreter;
     }
-    
-    public Analyzer() {    	
+
+    public Analyzer() {
     }
 
     public enum Action {
-    	NONE,
-    	ADD,
-    	REMOVE,
-    	REPLACE
+        NONE,
+        ADD,
+        REMOVE,
+        REPLACE
     }
-    
+
     /**
      * Analyzes the given method.
-     * 
+     *
      * @param owner the internal name of the class to which the method belongs.
      * @param m the method to be analyzed.
      * @return the symbolic state of the execution stack frame at each bytecode
@@ -100,17 +100,17 @@ public class Analyzer implements Opcodes {
      *         instruction cannot be reached (dead code).
      * @throws AnalyzerException if a problem occurs during the analysis.
      */
-    
+
     private enum ExecutionState {
-    	NORMAL,
-    	HANDLED,
-    	HANDLING
+        NORMAL,
+        HANDLED,
+        HANDLING
     }
-    
+
     private ExecutionState state = ExecutionState.NORMAL;
-    
+
     private final static Map<AbstractInsnNode, Frame> EMPTY_FRAMES =  new HashMap<AbstractInsnNode, Frame>();
-    
+
     public Map<AbstractInsnNode, Frame> analyze(final String owner, final MethodNode m)
             throws AnalyzerException
     {
@@ -119,7 +119,7 @@ public class Analyzer implements Opcodes {
         }
         insns = m.instructions;
         if(insns.size() == 0) {
-        	return EMPTY_FRAMES;
+            return EMPTY_FRAMES;
         }
         top = insns.get(0);
 
@@ -129,7 +129,7 @@ public class Analyzer implements Opcodes {
             int begin = insns.indexOf(tcb.start);
             int end = insns.indexOf(tcb.end);
             for (int j = begin; j < end; ++j) {
-            	AbstractInsnNode jth = insns.get(j);
+                AbstractInsnNode jth = insns.get(j);
                 List<TryCatchBlockNode> insnHandlers = handlers.get(jth);
                 if (insnHandlers == null) {
                     insnHandlers = new ArrayList<TryCatchBlockNode>();
@@ -156,10 +156,10 @@ public class Analyzer implements Opcodes {
             }
         }
         for (int i = 0; i < insns.size(); ++i) {
-        	AbstractInsnNode in = insns.get(i);
-        	if(subroutines.containsKey(in) && subroutines.get(in).start == null) {
-        		subroutines.remove(in);
-        	}
+            AbstractInsnNode in = insns.get(i);
+            if(subroutines.containsKey(in) && subroutines.get(in).start == null) {
+                subroutines.remove(in);
+            }
         }
 
         // initializes the data structures for the control flow analysis
@@ -181,25 +181,25 @@ public class Analyzer implements Opcodes {
             current.setLocal(local++, interpreter.newValue(null));
         }
         merge(top, current, null);
-        
+
         AbstractInsnNode bookmarkNode = null;
         AbstractInsnNode rollbackNode = null;
         List<AbstractInsnNode> finished = new ArrayList<AbstractInsnNode>();
         Map<AbstractInsnNode,AbstractInsnNode> saveTops = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 
-        // control flow analysis        
+        // control flow analysis
         while (top != null) {
-        	AbstractInsnNode insn=null;
-			top = top.getPrevious();
-        	insn = queue.get(top);		        	
-        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
-        	
+            AbstractInsnNode insn=null;
+            top = top.getPrevious();
+            insn = queue.get(top);
+            if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
+
 //        	switch(state) {
 //        		case NORMAL:
 //        			saveTops.put(insn, top);
-//        		case HANDLING:         			
+//        		case HANDLING:
 //        			top = top.getPrevious();
-//		        	insn = queue.get(top);		        	
+//		        	insn = queue.get(top);
 //		        	if(insn == null) insn = insns.get(0); // because default value in queue will be always 0
 //		        	break;
 //        		case HANDLED:
@@ -216,65 +216,65 @@ public class Analyzer implements Opcodes {
 //		        	state = ExecutionState.HANDLING;
 //        			break;
 //        	}
-        	
-        	Frame f = null;//frames.get(insn);
-        	Subroutine subroutine = null; //subroutines.get(insn);
-        	// queued.put(insn, Boolean.FALSE);
-        	
+
+            Frame f = null;//frames.get(insn);
+            Subroutine subroutine = null; //subroutines.get(insn);
+            // queued.put(insn, Boolean.FALSE);
+
             try {
-            	// DebugUtils.println(insn);
-            	int oldIndex = insns.indexOf(insn);
-            	// DebugUtils.println(">> ORG F: at " + oldIndex + "]["+ f);            	
-            	boolean done = false;
-            	while(done==false) {            	
-        			f = frames.get(insn);
-        			subroutine = subroutines.get(insn);
-        			queued.put(insn, Boolean.FALSE);
-        			finished.add(insn);
-            		
+                // DebugUtils.println(insn);
+                int oldIndex = insns.indexOf(insn);
+                // DebugUtils.println(">> ORG F: at " + oldIndex + "]["+ f);
+                boolean done = false;
+                while(done==false) {
+                    f = frames.get(insn);
+                    subroutine = subroutines.get(insn);
+                    queued.put(insn, Boolean.FALSE);
+                    finished.add(insn);
+
 //        			if(state == ExecutionState.NORMAL) {
-		     
-    				Action action = process(insn, frames);
-	            	
-	            	switch(action) {
-	            		case REPLACE:  
-	            			insn = insns.get(oldIndex);
-	            			// DebugUtils.println(">> F: " + f);
-	            			frames.put(insn, f);
-	            			subroutines.put(insn, subroutine);
-	            			queued.put(insn, Boolean.FALSE);	            			
-	            			done = true; 
-	            			break;
-	            		case REMOVE:   
-	            			insn = insns.get(oldIndex);
-	            			frames.put(insn, f);
-	            			subroutines.put(insn, subroutine);
-	            			queued.put(insn, Boolean.FALSE);
-	            			continue;
-	            		default:
-	            			done = true;
-	            	}
+
+                    Action action = process(insn, frames);
+
+                    switch(action) {
+                        case REPLACE:
+                            insn = insns.get(oldIndex);
+                            // DebugUtils.println(">> F: " + f);
+                            frames.put(insn, f);
+                            subroutines.put(insn, subroutine);
+                            queued.put(insn, Boolean.FALSE);
+                            done = true;
+                            break;
+                        case REMOVE:
+                            insn = insns.get(oldIndex);
+                            frames.put(insn, f);
+                            subroutines.put(insn, subroutine);
+                            queued.put(insn, Boolean.FALSE);
+                            continue;
+                        default:
+                            done = true;
+                    }
 //        			} else if(state == ExecutionState.HANDLING) {
 //        				// executing only, pass through preprocessing
 //        				done = true;
 //        			}
-            	}
-                AbstractInsnNode insnNode = insn; 
-                // m.instructions.get(insn); 
+                }
+                AbstractInsnNode insnNode = insn;
+                // m.instructions.get(insn);
                 // DebugUtils.println(insn + ":" + insnNode);
-                
+
                 int insnOpcode = insnNode.getOpcode();
                 int insnType = insnNode.getType();
-                
+
                 if(insnOpcode != -1) {
-                	//DebugUtils.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
-                	// DebugUtils.println("Frame: " + f);
-                	//debug(insn);
-                	DebugUtils.dump(insn);
+                    //DebugUtils.println("Opcode: " + AbstractVisitor.OPCODES[insnOpcode]);
+                    // DebugUtils.println("Frame: " + f);
+                    //debug(insn);
+                    DebugUtils.dump(insn);
                 }
-                
+
                 if (insnType == AbstractInsnNode.LABEL || insnType == AbstractInsnNode.LINE || insnType == AbstractInsnNode.FRAME) {
-                	merge(insn.getNext(), f, subroutine);
+                    merge(insn.getNext(), f, subroutine);
                     newControlFlowEdge(insn, insn.getNext());
                 } else {
 
@@ -285,8 +285,8 @@ public class Analyzer implements Opcodes {
                     if (insnNode instanceof JumpInsnNode) {
                         JumpInsnNode j = (JumpInsnNode) insnNode;
                         if (insnOpcode != GOTO && insnOpcode != JSR) {
-                        	merge(insn.getNext(), current, subroutine);
-                        	newControlFlowEdge(insn, insn.getNext());
+                            merge(insn.getNext(), current, subroutine);
+                            newControlFlowEdge(insn, insn.getNext());
                         }
                         AbstractInsnNode jump = j.label;
                         if (insnOpcode == JSR) {
@@ -374,11 +374,11 @@ public class Analyzer implements Opcodes {
                     }
                 }
             } catch (AnalyzerException e) {
-//            	state = ExecutionState.HANDLED;            
+//            	state = ExecutionState.HANDLED;
 //                rollbackNode = handle(insn, frames, e);
 //                bookmarkNode = insn;
-//                if(rollbackNode == null) { 
-                	throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
+//                if(rollbackNode == null) {
+                    throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
 //                }
             } catch (Exception e) {
                 throw new AnalyzerException("Error at instruction " + insn + ": " + e.getMessage(), e);
@@ -388,29 +388,29 @@ public class Analyzer implements Opcodes {
         return frames;
     }
 
-	protected AbstractInsnNode handle(AbstractInsnNode insn, Map<AbstractInsnNode, Frame> frames, AnalyzerException e) {
-		return null;
-	}
+    protected AbstractInsnNode handle(AbstractInsnNode insn, Map<AbstractInsnNode, Frame> frames, AnalyzerException e) {
+        return null;
+    }
 
-	protected void postprocess(final AbstractInsnNode insnNode, final Interpreter interpreter) {
-	}
+    protected void postprocess(final AbstractInsnNode insnNode, final Interpreter interpreter) {
+    }
 
-	protected Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {    	
-		return Action.NONE;
-	}
+    protected Action process(AbstractInsnNode s, Map<AbstractInsnNode, Frame> frames) {
+        return Action.NONE;
+    }
 
-	private void findSubroutine(AbstractInsnNode insn, final Subroutine sub, final List<AbstractInsnNode> calls)
+    private void findSubroutine(AbstractInsnNode insn, final Subroutine sub, final List<AbstractInsnNode> calls)
             throws AnalyzerException
     {
         while (true) {
-        	if(insn == null) {
+            if(insn == null) {
                 throw new AnalyzerException("Execution can fall off end of the code");
             }
-        	if(subroutines.get(insn) != null) {
+            if(subroutines.get(insn) != null) {
                 return;
             }
-        	subroutines.put(insn, sub.copy());
-        	AbstractInsnNode node = insn;
+            subroutines.put(insn, sub.copy());
+            AbstractInsnNode node = insn;
 
             // calls findSubroutine recursively on normal successors
             if (node instanceof JumpInsnNode) {
@@ -430,7 +430,7 @@ public class Analyzer implements Opcodes {
                 }
             } else if (node instanceof LookupSwitchInsnNode) {
                 LookupSwitchInsnNode lsnode = (LookupSwitchInsnNode) node;
-                findSubroutine(lsnode.dflt, sub, calls);                
+                findSubroutine(lsnode.dflt, sub, calls);
                 for (int i = lsnode.labels.size() - 1; i >= 0; --i) {
                     LabelNode l = (LabelNode) lsnode.labels.get(i);
                     findSubroutine(l, sub, calls);
@@ -468,7 +468,7 @@ public class Analyzer implements Opcodes {
     /**
      * Returns the symbolic stack frame for each instruction of the last
      * recently analyzed method.
-     * 
+     *
      * @return the symbolic state of the execution stack frame at each bytecode
      *         instruction of the method. The size of the returned array is
      *         equal to the number of instructions (and labels) of the method. A
@@ -482,7 +482,7 @@ public class Analyzer implements Opcodes {
 
     /**
      * Returns the exception handlers for the given instruction.
-     * 
+     *
      * @param insn the index of an instruction of the last recently analyzed
      *        method.
      * @return a list of {@link TryCatchBlockNode} objects.
@@ -493,7 +493,7 @@ public class Analyzer implements Opcodes {
 
     /**
      * Constructs a new frame with the given size.
-     * 
+     *
      * @param nLocals the maximum number of local variables of the frame.
      * @param nStack the maximum stack size of the frame.
      * @return the created frame.
@@ -504,7 +504,7 @@ public class Analyzer implements Opcodes {
 
     /**
      * Constructs a new frame that is identical to the given frame.
-     * 
+     *
      * @param src a frame.
      * @return the created frame.
      */
@@ -517,7 +517,7 @@ public class Analyzer implements Opcodes {
      * method does nothing. It can be overriden in order to construct the
      * control flow graph of a method (this method is called by the
      * {@link #analyze analyze} method during its visit of the method's code).
-     * 
+     *
      * @param insn an instruction index.
      * @param successor index of a successor instruction.
      */
@@ -530,7 +530,7 @@ public class Analyzer implements Opcodes {
      * overriden in order to construct the control flow graph of a method (this
      * method is called by the {@link #analyze analyze} method during its visit
      * of the method's code).
-     * 
+     *
      * @param insn an instruction index.
      * @param successor index of a successor instruction.
      * @return true if this edge must be considered in the data flow analysis
@@ -551,12 +551,12 @@ public class Analyzer implements Opcodes {
         final Frame frame,
         final Subroutine subroutine) throws AnalyzerException
     {
-    	Frame oldFrame = frames.get(insn);
-    	Subroutine oldSubroutine = subroutines.get(insn);
+        Frame oldFrame = frames.get(insn);
+        Subroutine oldSubroutine = subroutines.get(insn);
         boolean changes;
 
         if (oldFrame == null) {
-        	frames.put(insn, newFrame(frame));
+            frames.put(insn, newFrame(frame));
             changes = true;
         } else {
             changes = oldFrame.merge(frame, interpreter);
@@ -564,7 +564,7 @@ public class Analyzer implements Opcodes {
 
         if (oldSubroutine == null) {
             if (subroutine != null) {
-            	subroutines.put(insn, subroutine.copy());
+                subroutines.put(insn, subroutine.copy());
                 changes = true;
             }
         } else {
@@ -573,9 +573,9 @@ public class Analyzer implements Opcodes {
             }
         }
         if (changes && (!queued.containsKey(insn) || queued.get(insn).equals(Boolean.FALSE))) {
-        	queued.put(insn, Boolean.TRUE);
-        	queue.put(top, insn);     
-        	top = top.getNext();
+            queued.put(insn, Boolean.TRUE);
+            queue.put(top, insn);
+            top = top.getNext();
         }
     }
 
@@ -586,8 +586,8 @@ public class Analyzer implements Opcodes {
         final Subroutine subroutineBeforeJSR,
         final boolean[] access) throws AnalyzerException
     {
-    	Frame oldFrame = frames.get(insn);
-    	Subroutine oldSubroutine = subroutines.get(insn);
+        Frame oldFrame = frames.get(insn);
+        Subroutine oldSubroutine = subroutines.get(insn);
         boolean changes;
 
         afterRET.merge(beforeJSR, access);
@@ -603,9 +603,9 @@ public class Analyzer implements Opcodes {
             changes |= oldSubroutine.merge(subroutineBeforeJSR);
         }
         if (changes && (!queued.containsKey(insn) || queued.get(insn).equals(Boolean.FALSE))) {
-            	queued.put(insn, Boolean.TRUE);
-            	queue.put(top, insn);
-            	top = top.getNext();
+                queued.put(insn, Boolean.TRUE);
+                queue.put(top, insn);
+                top = top.getNext();
             }
     }
 }
