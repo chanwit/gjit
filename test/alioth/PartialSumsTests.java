@@ -30,10 +30,10 @@ public class PartialSumsTests extends TestCase {
     }
 
     public void testPartialSums() throws Throwable {
-        Method m = c.getMethod("run", Object.class);
+        Method m = c.getMethod("run", int.class);
         Object o = c.newInstance();
         Object result = m.invoke(o, 10);
-        assertEquals(3, result);
+        assertEquals(null, result);
     }
 
 }

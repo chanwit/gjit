@@ -367,17 +367,25 @@ public class SecondTransformer extends BaseTransformer {
                 toggle();
                 Integer op1_index = instToCallsiteIndex.get(s_op1);
                 Type op1_rtype=null;
-                if(op1_index == null) {
-                    op1_rtype = getBytecodeType(s_op1);
-                } else {
-                    op1_rtype = Type.getType(ce.getReturnType(op1_index));
-                }
-                Integer op2_index = instToCallsiteIndex.get(s_op2);
-                Type op2_rtype=null;
-                if(op1_index == null) {
-                    op2_rtype = getBytecodeType(s_op2);
-                } else {
-                    op2_rtype = Type.getType(ce.getReturnType(op2_index));
+                try {
+                    if(op1_index == null) {
+                        op1_rtype = getBytecodeType(s_op1);
+                    } else {
+                        op1_rtype = Type.getType(ce.getReturnType(op1_index));
+                    }
+                    Integer op2_index = instToCallsiteIndex.get(s_op2);
+                    Type op2_rtype=null;
+                    if(op1_index == null) {
+                        op2_rtype = getBytecodeType(s_op2);
+                    } else {
+                        op2_rtype = Type.getType(ce.getReturnType(op2_index));
+                    }
+                    // TODO dealing wtih callsite data here
+                } catch(Throwable e) {
+                    iv.setOpcode(INVOKEINTERFACE);
+                    iv.name = "call";
+                    unusedCallSites.remove(currentSiteIndex);
+                    return true;
                 }
                 iv.setOpcode(INVOKEINTERFACE);
                 iv.name = "call";
