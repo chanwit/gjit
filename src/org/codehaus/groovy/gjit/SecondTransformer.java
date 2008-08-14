@@ -366,21 +366,19 @@ public class SecondTransformer extends BaseTransformer {
 				dump(s_op2);
 				toggle();
 				Integer op1_index = indexMap.get(s_op1);
-				Type op1_rtype;
+				Type op1_rtype=null;
 				if(op1_index == null) {
 					op1_rtype = getÚÑBytecodeType(s_op1);
 				} else {
 					op1_rtype = Type.getType(ce.getReturnType(op1_index));
 				}
 				Integer op2_index = indexMap.get(s_op2);
-				Type op2_rtype;
+				Type op2_rtype=null;
 				if(op1_index == null) {
 					op2_rtype = getÚÑBytecodeType(s_op2);
 				} else {
 					op2_rtype = Type.getType(ce.getReturnType(op2_index));
 				}				
-				// what to do next ?
-				
 				iv.setOpcode(INVOKEINTERFACE);
 				iv.name = "call";
 				unusedCallSites.remove(currentSiteIndex);
