@@ -189,7 +189,7 @@ public class SecondTransformer extends BaseTransformer {
 					units.insertBefore(s2, new InsnNode(POP));					
 					units.set(s2, new InsnNode(DUP2_X1));					
 					return true;				
-			}
+			} 
 		}
 		return false;
 	}
@@ -388,33 +388,46 @@ public class SecondTransformer extends BaseTransformer {
 						toType = t2;
 						op_to_promote = s_op1;
 					}
-					InsnNode converter=new InsnNode(getConverterOpCode(fromType, toType));					
-					units.insert(op_to_promote, converter);
+					InsnNode converter=new InsnNode(getConverterOpCode(fromType, toType));
+					if(converter.getOpcode()!=NOP) {
+						units.insert(op_to_promote, converter);
+					}
 				}
 				int offset = 0;
 				if (toType == Type.LONG_TYPE) offset = 1;
 				else if (toType == Type.FLOAT_TYPE) offset = 2;
 				else if (toType == Type.DOUBLE_TYPE) offset = 3;
+				AbstractInsnNode newS = null;
 				switch (op) {
 					case minus:
-						units.set(s, new InsnNode(ISUB + offset));
-						return true;
+						newS = new InsnNode(ISUB + offset);
+						units.set(s, newS);
+						break;
 					case plus:
-						units.set(s, new InsnNode(IADD + offset));
-						return true;
+						newS = new InsnNode(IADD + offset);
+						units.set(s, newS);
+						break;
 					case multiply:
-						units.set(s, new InsnNode(IMUL + offset));
-						return true;
+						newS = new InsnNode(IMUL + offset);
+						units.set(s, newS);
+						break;
 					case div:
-						units.set(s, new InsnNode(IDIV + offset));
-						return true;
+						newS = new InsnNode(IDIV + offset);
+						units.set(s, newS);
+						break;
 					case leftShift:
-						units.set(s, new InsnNode(ISHL + offset));
-						return true;
+						newS = new InsnNode(ISHL + offset);
+						units.set(s, newS);
+						break;
 					case rightShift:
-						units.set(s, new InsnNode(ISHR + offset));
-						return true;
+						newS = new InsnNode(ISHR + offset);
+						units.set(s, newS);
+						break;
 				}
+				if(toType.getSize() == 2 && newS.getNext().getOpcode()==DUP) {
+					units.set(newS.getNext(), new InsnNode(DUP2));
+				}
+				return true;
 			}
 		}
 		return false;
@@ -667,8 +680,10 @@ public class SecondTransformer extends BaseTransformer {
 					DebugUtils.dump(newS);
 					DebugUtils.dump = false;					
 					int converterOpcode = getConverterOpCode(getÚÑBytecodeType(p),getÚÑBytecodeType(newS));
-					InsnNode converter = new InsnNode(converterOpcode);
-					units.insertBefore(newS, converter);
+					if(converterOpcode != 0) {
+						InsnNode converter = new InsnNode(converterOpcode);
+						units.insertBefore(newS, converter);
+					}
 				}
 			}
 		}
@@ -1119,7 +1134,9 @@ public class SecondTransformer extends BaseTransformer {
 				promotedType = t1;
 			}
 			InsnNode converter = new InsnNode(getConverterOpCode(fromType, toType));
-			units.insert(whereToInsert, converter);
+			if(converter.getOpcode() != NOP) {
+				units.insert(whereToInsert, converter);
+			}
 		} else {
 			promotedType = t1;
 		}
