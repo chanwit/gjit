@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package alioth.partialsums
 
@@ -24,9 +24,9 @@ public class Breakdown002Subject{
     def run(n) {
         a1 = a2 = a3 = a4 = a5 = a6 = a7 = a8 = a9 = 0.0D
         double twothirds = 2.0D/3.0D
-        
+
         double alt = -1.0D
         double k = 1.0D
     }
-	
+
 }
