@@ -23,8 +23,9 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.util.AbstractVisitor;
 
-import com.sun.corba.se.spi.orb.ParserImplTableBase;
-import com.sun.net.ssl.internal.ssl.Debug;
+import sun.security.action.GetBooleanAction;
+
+import static org.codehaus.groovy.gjit.DebugUtils.*;
 
 public class SecondTransformer extends BaseTransformer {
 
@@ -360,10 +361,24 @@ public class SecondTransformer extends BaseTransformer {
 			if (s_op1 instanceof MethodInsnNode || s_op2 instanceof MethodInsnNode) {
 				// use op1 as InsnNode to get its index
 				// use op2 as InsnNode to get its index
-				int op1_index = indexMap.get(s_op1);
-				int op2_index = indexMap.get(s_op1);
-				String op1_rtype = ce.getReturnType(op1_index);
-				String op2_rtype = ce.getReturnType(op2_index);
+				toggle();
+				dump(s_op1);
+				dump(s_op2);
+				toggle();
+				Integer op1_index = indexMap.get(s_op1);
+				Type op1_rtype;
+				if(op1_index == null) {
+					op1_rtype = getÚÑBytecodeType(s_op1);
+				} else {
+					op1_rtype = Type.getType(ce.getReturnType(op1_index));
+				}
+				Integer op2_index = indexMap.get(s_op2);
+				Type op2_rtype;
+				if(op1_index == null) {
+					op2_rtype = getÚÑBytecodeType(s_op2);
+				} else {
+					op2_rtype = Type.getType(ce.getReturnType(op2_index));
+				}				
 				// what to do next ?
 				
 				iv.setOpcode(INVOKEINTERFACE);

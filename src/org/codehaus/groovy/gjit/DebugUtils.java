@@ -18,6 +18,10 @@ public class DebugUtils {
 	public static boolean debug = true;
 	public static boolean dump = false;
 	
+	public static void toggle() {
+		dump = !dump;
+	}
+	
     public static void dump(AbstractInsnNode insn) {
     	
     	if(debug == false) return;

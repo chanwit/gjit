@@ -42,8 +42,8 @@ public class ClassEntry implements Serializable {
 		return this;
 	}
 
-	public String getReturnType(int op1_index) {		
-		return this.siteEntries.get(op1_index).getTypeDesc();
+	public String getReturnType(int siteIndex) {		
+		return this.siteEntries.get(siteIndex).getTypeDesc();
 	}
 	
 }
