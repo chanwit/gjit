@@ -6,19 +6,9 @@ package alioth
  */
 public class PartialSums{
 
-//    double a1
-//    double a2
-//    double a3
-//    double a4
-//    double a5
-//    double a6
-//    double a7
-//    double a8
-//    double a9
-
     def run(int n) {
-      double a1 = 0.0D, a2 = 0.0D, a3 = 0.0D, a4 = 0.0D, a5 = 0.0D
-      double a6 = 0.0D, a7 = 0.0D, a8 = 0.0D, a9 = 0.0D
+      double a1 = 0.0D, a2 = 0.0D, a3 = 0.0D, a4 = 0.0D
+      double a5 = 0.0D, a6 = 0.0D, a7 = 0.0D, a8 = 0.0D, a9 = 0.0D
 
       double twothirds = 2.0D/3.0D
 
