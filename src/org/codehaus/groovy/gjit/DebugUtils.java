@@ -15,7 +15,7 @@ import org.objectweb.asm.util.AbstractVisitor;
 
 public class DebugUtils {
 
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static boolean dump = false;
 
     public static void toggle() {

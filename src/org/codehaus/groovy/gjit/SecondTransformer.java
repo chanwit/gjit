@@ -382,6 +382,7 @@ public class SecondTransformer extends BaseTransformer {
                     }
                     // TODO dealing wtih callsite data here
                 } catch(Throwable e) {
+                    DebugUtils.println("callsite entry not available: " + e.getMessage());
                     iv.setOpcode(INVOKEINTERFACE);
                     iv.name = "call";
                     unusedCallSites.remove(currentSiteIndex);

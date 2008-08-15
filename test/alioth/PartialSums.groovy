@@ -6,18 +6,20 @@ package alioth
  */
 public class PartialSums{
 
-    double a1
-    double a2
-    double a3
-    double a4
-    double a5
-    double a6
-    double a7
-    double a8
-    double a9
+//    double a1
+//    double a2
+//    double a3
+//    double a4
+//    double a5
+//    double a6
+//    double a7
+//    double a8
+//    double a9
 
     def run(int n) {
-      a1 = a2 = a3 = a4 = a5 = a6 = a7 = a8 = a9 = 0.0D
+      double a1 = 0.0D, a2 = 0.0D, a3 = 0.0D, a4 = 0.0D, a5 = 0.0D
+      double a6 = 0.0D, a7 = 0.0D, a8 = 0.0D, a9 = 0.0D
+
       double twothirds = 2.0D/3.0D
 
       double alt = -1.0D
@@ -42,21 +44,20 @@ public class PartialSums{
 
          k += 1.0D
       }
+      printf("%.9f\t(2/3)^k\n", a1)
+      printf("%.9f\tk^-0.5\n", a2)
+      printf("%.9f\t1/k(k+1)\n", a3)
+      printf("%.9f\tFlint Hills\n", a4)
+      printf("%.9f\tCookson Hills\n", a5)
+      printf("%.9f\tHarmonic\n", a6)
+      printf("%.9f\tRiemann Zeta\n", a7)
+      printf("%.9f\tAlternating Harmonic\n", a8)
+      printf("%.9f\tGregory\n", a9)
     }
 
-//		printf("%.9f\t(2/3)^k\n", a1)
-//		printf("%.9f\tk^-0.5\n", a2)
-//		printf("%.9f\t1/k(k+1)\n", a3)
-//		printf("%.9f\tFlint Hills\n", a4)
-//		printf("%.9f\tCookson Hills\n", a5)
-//		printf("%.9f\tHarmonic\n", a6)
-//		printf("%.9f\tRiemann Zeta\n", a7)
-//		printf("%.9f\tAlternating Harmonic\n", a8)
-//		printf("%.9f\tGregory\n", a9)
-
-  static main(args) {
-    def n = Integer.parseInt(args[0])
-    new PartialSums().run(n)
-  }
+    static main(args) {
+      def n = Integer.parseInt(args[0])
+      new PartialSums().run(n)
+    }
 
 }
