@@ -275,6 +275,8 @@ public class SecondTransformer extends BaseTransformer {
     private void unboxForCorrectCall(AbstractInsnNode s) {
         AbstractInsnNode s1 = s.getNext();
         if(s1.getOpcode() == DUP) s1 = s1.getNext();
+        // TODO special case, need checking with ALOAD without SWAP
+        if(s1.getOpcode()>=ILOAD && s1.getOpcode() <= DLOAD) return;
         Type t = getBytecodeType(s1);
         if(t == null) {
             // try again looking for sequence of ALOAD, SWAP, XX
@@ -300,9 +302,8 @@ public class SecondTransformer extends BaseTransformer {
     }
 
     private void fixByArguments_specialCase1(MethodInsnNode iv) {
-        DebugUtils.dump=true;
+        //DebugUtils.toggle();
         DebugUtils.dump(iv);
-        DebugUtils.dump=false;
         AbstractInsnNode s0 = findStartingInsn(iv);
         SimpleInterpreter in = new SimpleInterpreter(this.node, s0, iv);
         AbstractInsnNode[] useBox = in.analyse().get(iv);
@@ -339,6 +340,7 @@ public class SecondTransformer extends BaseTransformer {
                 }
             }
         }
+        //DebugUtils.toggle();
     }
 
     private boolean unwrapBinOp(AbstractInsnNode s) {

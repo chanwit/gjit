@@ -124,13 +124,26 @@ public class SimpleInterpreter implements Opcodes {
                 push(new DefValue(insn, Type.getType(Object.class)));
                 }
                 break;
+            case CHECKCAST: {
+                DefValue obj = pop();
+                used.put(insn, new AbstractInsnNode[]{obj.source});
+                push(new DefValue(insn, Type.getType(Object.class)));
+                }
+                break;
             default :
                 throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
         }
     }
 
     private void execute0(FieldInsnNode insn) {
-        push(new DefValue(insn, Type.getType(Object.class)));
+        DebugUtils.toggle();
+        DebugUtils.dump(insn);
+        DebugUtils.toggle();
+        if(insn.desc.length()==1) {
+            push(new DefValue(insn, Type.getType(insn.desc)));
+        } else {
+            push(new DefValue(insn, Type.getType(Object.class)));
+        }
         //DebugUtils.dump(insn);
         //throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
     }

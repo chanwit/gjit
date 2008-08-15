@@ -19,6 +19,7 @@ public class DebugUtils {
     public static boolean dump = false;
 
     public static void toggle() {
+        debug = !debug;
         dump = !dump;
     }
 
