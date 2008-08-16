@@ -1,6 +1,8 @@
 package org.codehaus.groovy.gjit;
 
 import static org.codehaus.groovy.gjit.DebugUtils.dump;
+import static org.codehaus.groovy.gjit.DebugUtils.print;
+import static org.codehaus.groovy.gjit.DebugUtils.println;
 import static org.codehaus.groovy.gjit.DebugUtils.toggle;
 
 import java.util.ArrayList;
@@ -43,8 +45,7 @@ public class SecondTransformer extends BaseTransformer {
     private static final String CALL_SITE_INTERFACE = "org/codehaus/groovy/runtime/callsite/CallSite";
     private static final String DEFAULT_TYPE_TRANSFORMATION = "org/codehaus/groovy/runtime/typehandling/DefaultTypeTransformation";
 
-    public SecondTransformer(String owner, MethodNode mn, ConstantPack pack,
-            String[] siteNames) {
+    public SecondTransformer(String owner, MethodNode mn, ConstantPack pack, String[] siteNames) {
         super(owner, mn);
         this.pack = pack;
         this.siteNames = siteNames;
@@ -81,7 +82,7 @@ public class SecondTransformer extends BaseTransformer {
                 i--;
                 continue;
             }
-            if (earlyUnwrapCompare(s)) {
+            if (unwrapCompare(s)) {
                 i--;
                 continue;
             }
@@ -110,7 +111,7 @@ public class SecondTransformer extends BaseTransformer {
             if (fix_POP(s)) continue;
         }
         DebugUtils.println("===== pre-transformed");
-        reallocateLocalVars();
+        relocateLocalVars();
         removeUnusedCallSite();
         i = -1;
         DebugUtils.println("===== phase 2");
@@ -215,7 +216,7 @@ public class SecondTransformer extends BaseTransformer {
         return false;
     }
 
-    private void reallocateLocalVars() {
+    private void relocateLocalVars() {
         int[] localIndex = new int[localTypes.length];
         int j = 0;
         DebugUtils.println(localTypes.length);
@@ -302,8 +303,8 @@ public class SecondTransformer extends BaseTransformer {
     }
 
     private void fixByArguments_specialCase1(MethodInsnNode iv) {
-        //DebugUtils.toggle();
-        DebugUtils.dump(iv);
+        toggle();
+        dump(iv);
         AbstractInsnNode s0 = findStartingInsn(iv);
         SimpleInterpreter in = new SimpleInterpreter(this.node, s0, iv);
         AbstractInsnNode[] useBox = in.analyse().get(iv);
@@ -312,8 +313,8 @@ public class SecondTransformer extends BaseTransformer {
             for (int i = 0; i < argTypes.length; i++) {
                 if (useBox[i] == null)
                     continue;
-                DebugUtils.print("   use box " + i);
-                DebugUtils.dump(useBox[i]);
+                print("   use box " + i);
+                dump(useBox[i]);
                 if (argTypes[i].getSort() == Type.OBJECT
                         || argTypes[i].getSort() == Type.ARRAY) {
                     Type t = getBytecodeType(useBox[i]);
@@ -324,23 +325,22 @@ public class SecondTransformer extends BaseTransformer {
             }
         } else {
             for (int i = 0; i < argTypes.length; i++) {
-                if (useBox[i + 1] == null)
-                    continue;
-                DebugUtils.print("   use box " + (i + 1));
-                DebugUtils.dump(useBox[i + 1]);
+                if (useBox[i + 1] == null) continue;
+                print("   use box " + (i + 1));
+                dump(useBox[i + 1]);
                 if (argTypes[i].getSort() == Type.OBJECT
                         || argTypes[i].getSort() == Type.ARRAY) {
                     Type t = getBytecodeType(useBox[i + 1]);
                     if (t != null) {
-                        DebugUtils.dump(iv);
-                        DebugUtils.print(", to box ");
-                        DebugUtils.dump(useBox[i + 1]);
+                        dump(iv);
+                        print(", to box ");
+                        dump(useBox[i + 1]);
                         box(useBox[i + 1], t);
                     }
                 }
             }
         }
-        //DebugUtils.toggle();
+        toggle();
     }
 
     private boolean unwrapBinOp(AbstractInsnNode s) {
@@ -363,10 +363,6 @@ public class SecondTransformer extends BaseTransformer {
             if (s_op1 instanceof MethodInsnNode || s_op2 instanceof MethodInsnNode) {
                 // use op1 as InsnNode to get its index
                 // use op2 as InsnNode to get its index
-                toggle();
-                dump(s_op1);
-                dump(s_op2);
-                toggle();
                 Integer op1_index = instToCallsiteIndex.get(s_op1);
                 Type op1_rtype=null;
                 try {
@@ -1123,7 +1119,7 @@ public class SecondTransformer extends BaseTransformer {
         compareGreaterThanEqual
     };
 
-    private boolean earlyUnwrapCompare(AbstractInsnNode s) {
+    private boolean unwrapCompare(AbstractInsnNode s) {
         if (s.getOpcode() != Opcodes.INVOKESTATIC)
             return false;
         MethodInsnNode m = (MethodInsnNode) s;

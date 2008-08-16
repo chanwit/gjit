@@ -9,6 +9,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -48,8 +49,11 @@ public class SimpleInterpreter implements Opcodes {
     private AbstractInsnNode start;
     private AbstractInsnNode stop;
     private int maxStack;
+    private InsnList units;
+    private int currentIndex;
 
     public SimpleInterpreter(MethodNode methodNode, AbstractInsnNode s0, AbstractInsnNode s) {
+        units = methodNode.instructions;
         maxStack = methodNode.maxStack;
         start = s0;
         stop = s;
@@ -92,6 +96,7 @@ public class SimpleInterpreter implements Opcodes {
     }
 
     public void execute(AbstractInsnNode insn) {
+        currentIndex = units.indexOf(insn);
         if(insn instanceof InsnNode) {
             execute0((InsnNode)insn);
         } else if(insn instanceof IntInsnNode) {
@@ -122,13 +127,19 @@ public class SimpleInterpreter implements Opcodes {
                 DefValue size = pop();
                 used.put(insn, new AbstractInsnNode[]{size.source});
                 push(new DefValue(insn, Type.getType(Object.class)));
-                }
+            }
                 break;
             case CHECKCAST: {
                 DefValue obj = pop();
                 used.put(insn, new AbstractInsnNode[]{obj.source});
                 push(new DefValue(insn, Type.getType(Object.class)));
-                }
+            }
+                break;
+            case INSTANCEOF: {
+                DefValue obj = pop();
+                used.put(insn, new AbstractInsnNode[]{obj.source});
+                push(new DefValue(insn, Type.INT_TYPE));
+            }
                 break;
             default :
                 throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
@@ -136,13 +147,24 @@ public class SimpleInterpreter implements Opcodes {
     }
 
     private void execute0(FieldInsnNode insn) {
-        DebugUtils.toggle();
-        DebugUtils.dump(insn);
-        DebugUtils.toggle();
-        if(insn.desc.length()==1) {
-            push(new DefValue(insn, Type.getType(insn.desc)));
-        } else {
-            push(new DefValue(insn, Type.getType(Object.class)));
+        // GETSTATIC, PUTSTATIC, GETFIELD or PUTFIELD.
+//        DebugUtils.toggle();
+//        DebugUtils.dump(insn);
+//        DebugUtils.toggle();
+        switch(insn.getOpcode()) {
+            case GETFIELD:
+                used.put(insn, new AbstractInsnNode[]{pop().source});
+                push(new DefValue(insn, Type.getType(insn.desc)));
+                break;
+            case PUTFIELD:
+                used.put(insn, new AbstractInsnNode[]{pop().source, pop().source});
+                break;
+            case GETSTATIC:
+                push(new DefValue(insn, Type.getType(insn.desc)));
+                break;
+            case PUTSTATIC:
+                used.put(insn, new AbstractInsnNode[]{pop().source});
+                break;
         }
         //DebugUtils.dump(insn);
         //throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
@@ -187,6 +209,8 @@ public class SimpleInterpreter implements Opcodes {
             case IFLT:
                 used.put(insn, new AbstractInsnNode[]{pop().source});
                 break;
+            default:
+                throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
         }
 //        DebugUtils.dump(insn);
 //        throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);
