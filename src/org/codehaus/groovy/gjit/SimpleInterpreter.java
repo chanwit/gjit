@@ -50,7 +50,9 @@ public class SimpleInterpreter implements Opcodes {
     private AbstractInsnNode stop;
     private int maxStack;
     private InsnList units;
-    private int currentIndex;
+
+    // for debugging
+    protected int currentIndex;
 
     public SimpleInterpreter(MethodNode methodNode, AbstractInsnNode s0, AbstractInsnNode s) {
         units = methodNode.instructions;

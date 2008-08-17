@@ -276,21 +276,30 @@ public class SecondTransformer extends BaseTransformer {
     private void unboxForCorrectCall(AbstractInsnNode s) {
         AbstractInsnNode s1 = s.getNext();
         if(s1.getOpcode() == DUP) s1 = s1.getNext();
+        int s1_opcode = s1.getOpcode();
         // TODO special case, need checking with ALOAD without SWAP
-        if(s1.getOpcode()>=ILOAD && s1.getOpcode() <= DLOAD) return;
+        if(s1_opcode>=ILOAD && s1_opcode <= DLOAD) return;
+        if(s1_opcode>=ICONST_M1 && s1_opcode <= ICONST_5) return;
+        if(s1_opcode>=LCONST_0 && s1_opcode <= LCONST_1) return;
+        if(s1_opcode>=FCONST_0 && s1_opcode <= FCONST_1) return;
+        if(s1_opcode>=DCONST_0 && s1_opcode <= DCONST_1) return;
+        if(s1_opcode==LDC) return;
+        if(s1_opcode==GETFIELD) return;
+        if(s1_opcode==GETSTATIC) return;
         Type t = getBytecodeType(s1);
         if(t == null) {
             // try again looking for sequence of ALOAD, SWAP, XX
             AbstractInsnNode s2 = s1.getNext();
             AbstractInsnNode s3 = s2.getNext();
-            if(s1.getOpcode()==ALOAD && s2.getOpcode() == SWAP) {
+            if(s1_opcode==ALOAD && s2.getOpcode() == SWAP) {
                 t = getBytecodeType(s3);
             }
         }
         if(t!=null) {
             s1 = s.getNext(); // re-check
+            s1_opcode = s1.getOpcode();
             unbox(s1, t);
-            if(s1.getOpcode() == DUP && t.getSize()==2) {
+            if(s1_opcode == DUP && t.getSize()==2) {
                 units.set(s1, new InsnNode(DUP2));
             }
         }

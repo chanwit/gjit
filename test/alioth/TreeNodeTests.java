@@ -30,8 +30,9 @@ public class TreeNodeTests extends TestCase {
     }
 
     public void testTreeNode() throws Throwable {
-        Method m = c.getMethod("main", Object.class);
-        m.invoke(null, new Object[]{16});
+        Method m = c.getMethod("main", String[].class);
+        String[] args = new String[]{"16"};
+        m.invoke(null, (Object)args);
         // assertEquals(null, result);
     }
 
