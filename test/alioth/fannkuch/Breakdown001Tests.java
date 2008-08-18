@@ -1,4 +1,4 @@
-package alioth;
+package alioth.fannkuch;
 
 import helper.Utils;
 
@@ -10,7 +10,7 @@ import org.codehaus.groovy.gjit.PreProcess;
 
 import junit.framework.TestCase;
 
-public class TreeNodeTests extends TestCase {
+public class Breakdown001Tests extends TestCase {
 
     private static Class<?> c;
     private static byte[] out;
@@ -18,20 +18,20 @@ public class TreeNodeTests extends TestCase {
 
     static {
         try {
-            RandomAccessFile f = new RandomAccessFile("test/alioth/TreeNode.class","r");
+            RandomAccessFile f = new RandomAccessFile("test/alioth/fannkuch/Breakdown001.class","r");
             bytes = new byte[(int) f.length()];
             f.readFully(bytes);
             PreProcess p = PreProcess.perform(bytes);
             out = Optimiser.perform(p, bytes);
             Utils.dumpForCompare(bytes, out);
-            c = Utils.loadClass("alioth.TreeNode", out);
+            c = Utils.loadClass("alioth.fannkuch.Breakdown001", out);
         } catch(Throwable e) {
         }
     }
 
-    public void testTreeNode() throws Throwable {
+    public void testFannkuch() throws Throwable {
         Method m = c.getMethod("main", String[].class);
-        String[] args = new String[]{"16"};
+        String[] args = new String[]{"8"};
         m.invoke(null, (Object)args);
     }
 

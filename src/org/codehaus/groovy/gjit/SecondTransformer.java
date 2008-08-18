@@ -312,7 +312,7 @@ public class SecondTransformer extends BaseTransformer {
     }
 
     private void fixByArguments_specialCase1(MethodInsnNode iv) {
-        toggle();
+        //toggle();
         dump(iv);
         AbstractInsnNode s0 = findStartingInsn(iv);
         SimpleInterpreter in = new SimpleInterpreter(this.node, s0, iv);
@@ -349,7 +349,7 @@ public class SecondTransformer extends BaseTransformer {
                 }
             }
         }
-        toggle();
+        //toggle();
     }
 
     private boolean unwrapBinOp(AbstractInsnNode s) {
@@ -369,7 +369,8 @@ public class SecondTransformer extends BaseTransformer {
                 return false;
             AbstractInsnNode s_op2 = s.getPrevious();
             AbstractInsnNode s_op1 = s_op2.getPrevious();
-            if (s_op1 instanceof MethodInsnNode || s_op2 instanceof MethodInsnNode) {
+            if (s_op1 instanceof MethodInsnNode || s_op2 instanceof MethodInsnNode ||
+                isString(s_op1) || isString(s_op2)) {
                 // use op1 as InsnNode to get its index
                 // use op2 as InsnNode to get its index
                 Integer op1_index = instToCallsiteIndex.get(s_op1);
@@ -457,6 +458,13 @@ public class SecondTransformer extends BaseTransformer {
                 }
                 return true;
             }
+        }
+        return false;
+    }
+
+    private boolean isString(AbstractInsnNode op) {
+        if(op.getOpcode()==LDC) {
+            return ((LdcInsnNode)op).cst instanceof String;
         }
         return false;
     }
