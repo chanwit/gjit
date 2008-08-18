@@ -78,6 +78,7 @@ public class SecondTransformer extends BaseTransformer {
                 continue;
             }
             if (unwrapConst(s)) continue;
+            if (unwrapBooleanAndIF(s)) continue;
             if (unwrapBoxOrUnbox(s)) {
                 i--;
                 continue;
@@ -137,6 +138,31 @@ public class SecondTransformer extends BaseTransformer {
                 continue;
             }
         }
+    }
+
+    private boolean unwrapBooleanAndIF(AbstractInsnNode s) {
+//    GETSTATIC java/lang/Boolean.TRUE : Ljava/lang/Boolean;
+//    INVOKESTATIC org/codehaus/groovy/runtime/typehandling/DefaultTypeTransformation.booleanUnbox (Ljava/lang/Object;)Z
+//    IFEQ L15
+        if(s.getOpcode() != GETSTATIC) return false;
+        AbstractInsnNode s1 = s.getNext();
+        if(s1.getOpcode() != INVOKESTATIC) return false;
+        AbstractInsnNode s2 = s1.getNext();
+        if(s2 instanceof JumpInsnNode == false) return false;
+        FieldInsnNode f = ((FieldInsnNode)s);
+        MethodInsnNode iv1 = (MethodInsnNode)s1;
+        if(f.owner.equals("java/lang/Boolean") && iv1.owner.equals(DEFAULT_TYPE_TRANSFORMATION) && iv1.name.equals("booleanUnbox")) {
+            if(f.name.equals("TRUE")) {
+                units.set(s, new InsnNode(ICONST_1));
+                units.remove(s1);
+                return true;
+            } else if(f.name.equals("FALSE")) {
+                units.set(s, new InsnNode(ICONST_0));
+                units.remove(s1);
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean fix_POP(AbstractInsnNode s) {
