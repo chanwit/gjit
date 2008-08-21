@@ -101,13 +101,13 @@ public class Analyzer implements Opcodes {
      * @throws AnalyzerException if a problem occurs during the analysis.
      */
 
-    private enum ExecutionState {
-        NORMAL,
-        HANDLED,
-        HANDLING
-    }
+//    private enum ExecutionState {
+//        NORMAL,
+//        HANDLED,
+//        HANDLING
+//    }
 
-    private ExecutionState state = ExecutionState.NORMAL;
+    // private ExecutionState state = ExecutionState.NORMAL;
 
     private final static Map<AbstractInsnNode, Frame> EMPTY_FRAMES =  new HashMap<AbstractInsnNode, Frame>();
 
@@ -182,10 +182,10 @@ public class Analyzer implements Opcodes {
         }
         merge(top, current, null);
 
-        AbstractInsnNode bookmarkNode = null;
-        AbstractInsnNode rollbackNode = null;
+        // AbstractInsnNode bookmarkNode = null;
+        // AbstractInsnNode rollbackNode = null;
         List<AbstractInsnNode> finished = new ArrayList<AbstractInsnNode>();
-        Map<AbstractInsnNode,AbstractInsnNode> saveTops = new HashMap<AbstractInsnNode, AbstractInsnNode>();
+        // Map<AbstractInsnNode,AbstractInsnNode> saveTops = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 
         // control flow analysis
         while (top != null) {

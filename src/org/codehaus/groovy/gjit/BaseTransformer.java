@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Value;
 
-public class BaseTransformer extends Analyzer implements Opcodes {
+public class BaseTransformer implements Opcodes {
 
     private String owner;
     //private Interpreter interpreter;
@@ -26,6 +26,8 @@ public class BaseTransformer extends Analyzer implements Opcodes {
 
     protected boolean preTransformationOnly=false;
 
+    protected Interpreter interpreter;
+
     public BaseTransformer(String owner, MethodNode mn) {
         super();
         this.owner = owner;
@@ -34,8 +36,8 @@ public class BaseTransformer extends Analyzer implements Opcodes {
     }
 
     public BaseTransformer(Interpreter interpreter, String owner, MethodNode mn) {
-        super(interpreter);
-        //this.interpreter = interpreter;
+        //super(interpreter);
+        this.interpreter = interpreter;
         this.owner = owner;
         this.node = mn;
         this.units = node.instructions;
@@ -47,7 +49,7 @@ public class BaseTransformer extends Analyzer implements Opcodes {
         }
         pretransform();
         if(preTransformationOnly) return;
-        frames = this.analyze(this.owner, this.node);
+        // frames = this.analyze(this.owner, this.node);
         posttransform();
     }
 

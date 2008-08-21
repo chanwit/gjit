@@ -31,7 +31,7 @@ public class SiteTypeHelper {
         String name = Type.getInternalName(site.getArray().owner.getClass());
         try {
             ClassEntry c = SiteTypePersistentCache.v().find(name);
-            if(c==null) {
+            if(c!=null) {
                 c.add(site.getIndex(), Type.getInternalName(returnObject.getClass()));
             }
         } catch(Throwable e) {

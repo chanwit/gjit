@@ -635,23 +635,23 @@ public class SecondTransformer extends BaseTransformer {
         return true;
     }
 
-    @Override
-    public Action process(AbstractInsnNode s,
-            Map<AbstractInsnNode, Frame> frames) {
-        // if(extractCallSiteName(s)) return Action.NONE;
-        // if(eliminateBoxCastUnbox(s)) return Action.REMOVE;
-        // if(unwrapConst(s)) return Action.REPLACE;
-        // if(unwrapBoxOrUnbox(s)) return Action.REMOVE;
-        // if(unwrapBinaryPrimitiveCall(s, frames.get(s))) return
-        // Action.REPLACE;
-        // if(unwrapCompare(s,frames.get(s))) return Action.REMOVE;
-        // if(clearWrapperCast(s)) return Action.REMOVE;
-        // if(fixASTORE(s,frames.get(s))) return Action.REPLACE;
-        // if(fixALOAD(s)) return Action.REPLACE;
-        // if(fixHasNext(s)) return Action.REPLACE; // workaround ASM verifier
-        // if(fixAASTORE(s,frames.get(s))) return Action.ADD;
-        return Action.NONE;
-    }
+//    @Override
+//    public Action process(AbstractInsnNode s,
+//            Map<AbstractInsnNode, Frame> frames) {
+//        // if(extractCallSiteName(s)) return Action.NONE;
+//        // if(eliminateBoxCastUnbox(s)) return Action.REMOVE;
+//        // if(unwrapConst(s)) return Action.REPLACE;
+//        // if(unwrapBoxOrUnbox(s)) return Action.REMOVE;
+//        // if(unwrapBinaryPrimitiveCall(s, frames.get(s))) return
+//        // Action.REPLACE;
+//        // if(unwrapCompare(s,frames.get(s))) return Action.REMOVE;
+//        // if(clearWrapperCast(s)) return Action.REMOVE;
+//        // if(fixASTORE(s,frames.get(s))) return Action.REPLACE;
+//        // if(fixALOAD(s)) return Action.REPLACE;
+//        // if(fixHasNext(s)) return Action.REPLACE; // workaround ASM verifier
+//        // if(fixAASTORE(s,frames.get(s))) return Action.ADD;
+//        return Action.NONE;
+//    }
 
     private boolean fixHasNext(AbstractInsnNode s) {
         if (s.getOpcode() != INVOKEINTERFACE)
