@@ -7,7 +7,7 @@ package alioth.fannkuch
  * @author chanwit
  *
  */
-public class Breakdown002 {
+public class Breakdown003 {
 
     /* The Computer Language Benchmarks Game
        http://shootout.alioth.debian.org/
@@ -37,13 +37,15 @@ public class Breakdown002 {
                 print("\n")
                 check++
             }
-            // temp break
-            break
-/*
+
             while (r != 1) {
                 count[r - 1] = r
                 r--
             }
+            // temp break
+            break
+
+
             if (!(perm1[0] == 0 || perm1[m] == m)) {
                 for (i in 0..<n) {
                     perm[i] = perm1[i]
@@ -69,7 +71,7 @@ public class Breakdown002 {
                     }
                 }
             }
-
+/*
             while (true) {
                 if (r == n) {
                     return maxFlipsCount
