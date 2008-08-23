@@ -146,6 +146,7 @@ public class SecondTransformer extends BaseTransformer {
 //    IFEQ L15
         if(s.getOpcode() != GETSTATIC) return false;
         AbstractInsnNode s1 = s.getNext();
+        if(s1.getOpcode()==-1) s1 = s1.getNext();
         if(s1.getOpcode() != INVOKESTATIC) return false;
         AbstractInsnNode s2 = s1.getNext();
         if(s2 instanceof JumpInsnNode == false) return false;
@@ -210,6 +211,22 @@ public class SecondTransformer extends BaseTransformer {
     private boolean fix_XRETURN(AbstractInsnNode s) {
         if(s.getOpcode() >= IRETURN && s.getOpcode() <= DRETURN) {
             AbstractInsnNode p = s.getPrevious();
+            if(p.getOpcode()==ACONST_NULL) {
+                switch (s.getOpcode()) {
+                case IRETURN:
+                    units.set(p, new InsnNode(ICONST_0));
+                    return true;
+                case LRETURN:
+                    units.set(p, new InsnNode(LCONST_0));
+                    return true;
+                case FRETURN:
+                    units.set(p, new InsnNode(FCONST_0));
+                    return true;
+                case DRETURN:
+                    units.set(p, new InsnNode(DCONST_0));
+                    return true;
+                }
+            }
 //			DebugUtils.dump = true;
 //			DebugUtils.dump(p);
 //			DebugUtils.dump = false;
@@ -697,28 +714,32 @@ public class SecondTransformer extends BaseTransformer {
     private boolean fixASTORE(AbstractInsnNode s, int sort) {
         VarInsnNode v = (VarInsnNode) s;
         Type t = null;
-        // AbstractInsnNode p = s.getPrevious();
+        AbstractInsnNode p = s.getPrevious();
         VarInsnNode newS;
         switch (sort) {
             case Type.INT:
+                if(p.getOpcode()==ACONST_NULL) units.set(p, new InsnNode(ICONST_0));
                 newS = new VarInsnNode(ISTORE, v.var);
                 units.set(s, newS);
                 localTypes[v.var] = Type.INT;
                 t = Type.INT_TYPE;
                 break;
             case Type.LONG:
+                if(p.getOpcode()==ACONST_NULL) units.set(p, new InsnNode(LCONST_0));
                 newS = new VarInsnNode(LSTORE, v.var);
                 units.set(s, newS);
                 localTypes[v.var] = Type.LONG;
                 t = Type.LONG_TYPE;
                 break;
             case Type.FLOAT:
+                if(p.getOpcode()==ACONST_NULL) units.set(p, new InsnNode(FCONST_0));
                 newS = new VarInsnNode(FSTORE, v.var);
                 units.set(s, newS);
                 localTypes[v.var] = Type.FLOAT;
                 t = Type.FLOAT_TYPE;
                 break;
             case Type.DOUBLE:
+                if(p.getOpcode()==ACONST_NULL) units.set(p, new InsnNode(DCONST_0));
                 newS = new VarInsnNode(DSTORE, v.var);
                 units.set(s, newS);
                 localTypes[v.var] = Type.DOUBLE;
@@ -728,7 +749,7 @@ public class SecondTransformer extends BaseTransformer {
                 return false;
         }
         if (t != null) {
-            AbstractInsnNode p = newS.getPrevious();
+            p = newS.getPrevious();
             if (p != null) {
                 if (p.getOpcode() == DUP) p = p.getPrevious();
                 if (p instanceof MethodInsnNode) {
@@ -815,8 +836,6 @@ public class SecondTransformer extends BaseTransformer {
         switch (localTypes[v.var]) {
         case Type.INT:
             units.set(s, new VarInsnNode(ILOAD, v.var));
-            DebugUtils.print(">> fix ALOAD " + v.var);
-            DebugUtils.println(" to ILOAD " + v.var);
             return true;
         case Type.LONG:
             units.set(s, new VarInsnNode(LLOAD, v.var));
