@@ -5,93 +5,95 @@
               directory with the processing instruction <?eclipse.ant.import?>
               as the first entry and export the buildfile again. -->
 <project basedir="." default="build" name="gjit">
-	<property environment="env" />
-	<property name="ECLIPSE_HOME" value="../../eclipse-europa"/>
-	<property name="debuglevel" value="source,lines,vars" />
-	<property name="target" value="1.5" />
-	<property name="source" value="1.5" />
+    <property environment="env" />
+    <property name="ECLIPSE_HOME" value="../../eclipse-europa"/>
+    <property name="debuglevel" value="source,lines,vars" />
+    <property name="target" value="1.5" />
+    <property name="source" value="1.5" />
 
-	<property name="version" value="0.1" />
+    <property name="version" value="0.1" />
 
-	<path id="JUnit 3.libraryclasspath">
-		<pathelement location="${ECLIPSE_HOME}/plugins/org.junit_3.8.2.v200706111738/junit.jar" />
-	</path>
+    <path id="JUnit 3.libraryclasspath">
+        <pathelement location="${ECLIPSE_HOME}/plugins/org.junit_3.8.2.v200706111738/junit.jar" />
+    </path>
 
-	<path id="gjit.classpath">
-		<pathelement location="bin" />
-		<pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar" />
-		<pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-util/3.1/asm-util-3.1.jar" />
-		<pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-tree/3.1/asm-tree-3.1.jar" />
-		<pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-analysis/3.1/asm-analysis-3.1.jar" />
-		<pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-commons/3.1/asm-commons-3.1.jar" />
-	    <pathelement location="../healthy/target/install/embeddable/groovy-all-1.6-beta-2-SNAPSHOT.jar"/>		
-		<path refid="JUnit 3.libraryclasspath" />
-	</path>
-	<target name="init">
-		<mkdir dir="bin" />
-		<copy includeemptydirs="false" todir="bin">
-			<fileset dir="src" excludes="**/*.launch, **/*.java" />
-		</copy>
-		<copy includeemptydirs="false" todir="bin">
-			<fileset dir="test" excludes="**/*.launch, **/*.java" />
-		</copy>
-	</target>
-	<target name="clean">
-		<delete dir="bin" />
-	</target>
-	<target depends="clean" name="cleanall" />
-	<target depends="build-subprojects,build-project" name="build" />
-	<target name="build-subprojects" />
-	<target depends="init" name="build-project">
-		<taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="lib/jarjar-1.0rc7.jar" />
-		<echo message="${ant.project.name}: ${ant.file}" />
-		<javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
-			<src path="src" />
-			<classpath refid="gjit.classpath" />
-		</javac>
-		<javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
-			<src path="test" />
-			<classpath refid="gjit.classpath" />
-		</javac>
-		<jarjar jarfile="gjit-${version}.jar" basedir="bin">
-			<include name="**/db/*.class" />
-			<include name="**/gjit/*.class" />
-			<include name="**/agent/**/*.class" />
-			<manifest>
-				<attribute name="Premain-Class" value="org.codehaus.groovy.gjit.agent.Agent" />
-				<attribute name="Can-Redefine-Classes" value="true" />
-			</manifest>
-			<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-util/3.1/asm-util-3.1.jar" />
-			<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-tree/3.1/asm-tree-3.1.jar" />
-			<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-analysis/3.1/asm-analysis-3.1.jar" />
-			<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-commons/3.1/asm-commons-3.1.jar" />
-			<zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar" />
-			<rule pattern="org.objectweb.**" result="gjitjarjarasm.@1" />
-		</jarjar>
-		<!-- copy file="gjit-core.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->
-		<!-- copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->
-		<copy file="gjit-${version}.jar" todir="C:\groovy-ck1\healthy\target\install\lib" />
-	</target>
-	<target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects" />
-	<target name="perform-test">
-		<taskdef name="groovyc"
-		         classname="org.codehaus.groovy.ant.Groovyc"
-		         classpathref="gjit.classpath"/>
-		<delete dir="junit" />
-		<mkdir dir="junit"/>
-		<groovyc srcdir="test" destdir="test">
-		  <classpath refid="gjit.classpath"/>
-		</groovyc>		
-		<junit fork="yes">
-			<formatter type="xml" />
-			<batchtest fork="yes" todir="junit">
-				<fileset dir="test">
-					<include name="**/*Test*.java" />
-				</fileset>
-			</batchtest>
-			<classpath refid="gjit.classpath" />
-		</junit>
-	</target>
+    <path id="gjit.classpath">
+        <pathelement location="bin" />
+        <pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar" />
+        <pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-util/3.1/asm-util-3.1.jar" />
+        <pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-tree/3.1/asm-tree-3.1.jar" />
+        <pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-analysis/3.1/asm-analysis-3.1.jar" />
+        <pathelement location="../../Documents and Settings/chanwit/.m2/repository/asm/asm-commons/3.1/asm-commons-3.1.jar" />
+        <pathelement location="../healthy/target/install/embeddable/groovy-all-1.6-beta-2-SNAPSHOT.jar"/>
+        <path refid="JUnit 3.libraryclasspath" />
+    </path>
+    <target name="init">
+        <mkdir dir="bin" />
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src" excludes="**/*.launch, **/*.java" />
+        </copy>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="test" excludes="**/*.launch, **/*.java" />
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin" />
+    </target>
+    <target depends="clean" name="cleanall" />
+    <target depends="build-subprojects,build-project" name="build" />
+    <target name="build-subprojects" />
+    <target depends="init" name="build-project">
+        <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="lib/jarjar-1.0rc7.jar" />
+        <echo message="${ant.project.name}: ${ant.file}" />
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src" />
+            <classpath refid="gjit.classpath" />
+        </javac>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="test" />
+            <classpath refid="gjit.classpath" />
+        </javac>
+        <jarjar jarfile="gjit-${version}.jar" basedir="bin">
+            <include name="**/db/*.class" />
+            <include name="**/gjit/*.class" />
+            <include name="**/agent/**/*.class" />
+            <manifest>
+                <attribute name="Premain-Class" value="org.codehaus.groovy.gjit.agent.Agent" />
+                <attribute name="Can-Redefine-Classes" value="true" />
+            </manifest>
+            <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-util/3.1/asm-util-3.1.jar" />
+            <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-tree/3.1/asm-tree-3.1.jar" />
+            <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-analysis/3.1/asm-analysis-3.1.jar" />
+            <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm-commons/3.1/asm-commons-3.1.jar" />
+            <zipfileset src="../../Documents and Settings/chanwit/.m2/repository/asm/asm/3.1/asm-3.1.jar" />
+            <rule pattern="org.objectweb.**" result="gjitjarjarasm.@1" />
+        </jarjar>
+        <!-- copy file="gjit-core.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->
+        <!-- copy file="gjit-cache.jar" todir="C:\groovy-ck1\healthy\target\install\lib"/ -->
+        <copy file="gjit-${version}.jar" todir="C:\groovy-ck1\healthy\target\install\lib" />
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects" />
+    <target name="compile-test">
+        <taskdef name="groovyc"
+                 classname="org.codehaus.groovy.ant.Groovyc"
+                 classpathref="gjit.classpath"/>
+        <groovyc srcdir="test" destdir="test">
+          <classpath refid="gjit.classpath"/>
+        </groovyc>
+    </target>
+    <target name="perform-test" depends="compile-test">
+        <delete dir="junit" />
+        <mkdir dir="junit"/>
+        <junit fork="yes">
+            <formatter type="xml" />
+            <batchtest fork="yes" todir="junit">
+                <fileset dir="test">
+                    <include name="**/*Test*.java" />
+                </fileset>
+            </batchtest>
+            <classpath refid="gjit.classpath" />
+        </junit>
+    </target>
     <target name="junitreport" depends="perform-test">
         <junitreport todir="junit">
             <fileset dir="junit">
@@ -99,6 +101,6 @@
             </fileset>
             <report format="frames" todir="junit"/>
         </junitreport>
-    </target>	
-	<target name="test" depends="junitreport"/>
+    </target>
+    <target name="test" depends="junitreport"/>
 </project>
