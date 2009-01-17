@@ -58,11 +58,11 @@
 
         <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="lib.path.id" />
 
-        <javac debug="true" debuglevel="${debuglevel}" destdir="${build.dir}" source="${source}" target="${target}">
+        <javac debug="true" destdir="${build.dir}" source="${source}" target="${target}">
             <src path="${src.dir}" />
             <classpath refid="run.path.id" />
         </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="${build.dir}" source="${source}" target="${target}">
+        <javac debug="true" destdir="${build.dir}" source="${source}" target="${target}">
             <src path="${test.dir}" />
             <classpath refid="run.path.id" />
         </javac>
