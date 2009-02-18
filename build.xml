@@ -1,6 +1,6 @@
 <project name="go-ivy" default="build" xmlns:ivy="antlib:org.apache.ivy.ant">
 
-    <property name="ivy.install.version" value="2.0.0-rc2" />
+    <property name="ivy.install.version" value="2.0.0" />
     <property name="ivy.jar.dir" value="${basedir}/ivy" />
     <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
@@ -13,6 +13,10 @@
     <property name="src.dir" value="src" />
     <property name="test.dir" value="test" />
     <property name="lib.dir" value="lib" />
+    <property name="temp.dir" value="temp"/>
+
+    <available file="${temp.dir}/aspectj-1.6.3.jar" property="aspectj.present"/>
+    <available file="${lib.dir}/jarjar-1.0.jar" property="jarjar.present"/>
 
     <path id="lib.path.id">
         <fileset dir="${lib.dir}" />
@@ -51,8 +55,35 @@
         <ivy:cleancache />
     </target>
 
-    <target name="build" depends="install-ivy" description="--> resolve dependencies, compile and run the project">
+    <target name="download-aspectj" unless="aspectj.present">
+        <mkdir dir="${temp.dir}"/>
+        <echo message="downloading aspectj 1.6.3 ..."/>
+        <get src="http://www.mirrorservice.org/sites/download.eclipse.org/eclipseMirror/tools/aspectj/aspectj-1.6.3.jar"
+            dest="${temp.dir}/aspectj-1.6.3.jar" usetimestamp="true"/>
+
+        <echo message="unjar ..."/>
+        <unjar src="${temp.dir}/aspectj-1.6.3.jar"
+               dest="${temp.dir}">
+            <patternset>
+                <include name="lib/*.jar"/>
+            </patternset>
+        </unjar>
+    </target>
+
+    <target name="download-jarjar" unless="jarjar.present">
+        <echo message="getting jarjar 1.0 ..."/>
+        <get src="http://jarjar.googlecode.com/files/jarjar-1.0.jar"
+            dest="${lib.dir}/jarjar-1.0.jar" usetimestamp="true"/>
+    </target>
+
+    <target name="build" depends="install-ivy,download-aspectj,download-jarjar"
+            description="--> resolve dependencies, compile and run the project">
         <ivy:retrieve/>
+
+        <copy todir="${lib.dir}">
+            <fileset dir="${temp.dir}/lib"/>
+        </copy>
+
         <echo message="compiling..."/>
         <mkdir dir="${build.dir}" />
 
@@ -82,7 +113,7 @@
             <rule pattern="org.objectweb.**" result="gjitjarjarasm.@1" />
         </jarjar>
     </target>
-    
+
     <target name="clean-build" depends="clean, build" />
 
 </project>
