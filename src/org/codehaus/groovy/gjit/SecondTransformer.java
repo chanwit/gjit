@@ -213,7 +213,6 @@ public class SecondTransformer extends BaseTransformer {
 
     private boolean fix_XRETURN(AbstractInsnNode s) {
         if(s.getOpcode() >= IRETURN && s.getOpcode() <= DRETURN) {
-            System.out.println("fix_XRETURN");
             AbstractInsnNode p = s.getPrevious();
             while(p instanceof LabelNode) p = p.getPrevious();
             if(p.getOpcode()==ACONST_NULL) {
