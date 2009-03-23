@@ -104,7 +104,13 @@ public class PreProcess extends ClassAdapter {
         public void visitFieldInsn(int opcode, String owner, String name,String desc) {
             if( state == ConstantCollectingState.GOT_VALUE) {
                 if(name.startsWith("$const$")) {
-                    pack.put(name, value);
+                    // System.out.println("current type: " + desc);
+                    // System.out.println("cst: " + value.getClass());
+                    if(desc.equals("Ljava/lang/Integer;") && value instanceof Long) {
+                        pack.put(name, ((Long)value).intValue());
+                    } else {
+                        pack.put(name, value);
+                    }
                     state = ConstantCollectingState.GOT_NAME;
                 } else if(name.startsWith("__timeStamp")) {
                     // TODO here is the call to SiteTypePersistentCache

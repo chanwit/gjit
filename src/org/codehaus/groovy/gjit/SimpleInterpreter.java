@@ -319,7 +319,8 @@ public class SimpleInterpreter implements Opcodes {
                 used.put(insn, new AbstractInsnNode[]{tos.source});
                 }
                 break;
-            case DUP: {
+            case DUP:
+            case DUP2: {
                 DefValue tos = peek();
                 used.put(insn, new AbstractInsnNode[]{tos.source});
                 push(tos);
@@ -377,6 +378,10 @@ public class SimpleInterpreter implements Opcodes {
                 used.put(insn, new AbstractInsnNode[] { arg0.source, arg1.source });
                 push(new DefValue(insn, Type.INT_TYPE));
             }
+            case L2D:
+                DefValue arg0 = pop();
+                used.put(insn, new AbstractInsnNode[] {arg0.source});
+                push(new DefValue(insn, Type.DOUBLE_TYPE));
             break;
             default:
                 throw new RuntimeException("not implemented yet: " + AbstractVisitor.OPCODES[insn.getOpcode()]);

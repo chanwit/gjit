@@ -193,8 +193,8 @@ public class SecondTransformer extends BaseTransformer {
             AbstractInsnNode p = s.getPrevious();
             AbstractInsnNode s1 = s.getNext();
             AbstractInsnNode s2 = s1.getNext();
+            Type t = getBytecodeType(p);
             if(s1.getOpcode() == ALOAD && s2.getOpcode() == SWAP) {
-                Type t = getBytecodeType(p);
                 if(t==null && s.getOpcode()==DUP) return false;
                 if((t != null && t.getSize() == 2) || s.getOpcode() == DUP2) {
                     units.remove(s);
@@ -203,6 +203,9 @@ public class SecondTransformer extends BaseTransformer {
                     units.set(s2, new InsnNode(DUP2_X1));
                     return true;
                 }
+            } else if(p.getOpcode() == INVOKESTATIC && t == null && s.getOpcode() == DUP2) {
+                units.set(s, new InsnNode(DUP));
+                return false;
             }
         }
         return false;
@@ -700,12 +703,28 @@ public class SecondTransformer extends BaseTransformer {
         AbstractInsnNode p = s.getPrevious();
         switch (p.getOpcode()) {
         case ILOAD:
+        case IADD:
+        case ISUB:
+        case IMUL:
+        case IDIV:
             return fixASTORE(s, Type.INT_TYPE);
         case LLOAD:
+        case LADD:
+        case LSUB:
+        case LMUL:
+        case LDIV:
             return fixASTORE(s, Type.LONG_TYPE);
         case FLOAD:
+        case FADD:
+        case FSUB:
+        case FMUL:
+        case FDIV:
             return fixASTORE(s, Type.FLOAT_TYPE);
         case DLOAD:
+        case DADD:
+        case DSUB:
+        case DMUL:
+        case DDIV:
             return fixASTORE(s, Type.DOUBLE_TYPE);
         }
         return false;
@@ -1049,9 +1068,15 @@ public class SecondTransformer extends BaseTransformer {
                 }
             }
             AbstractInsnNode s1 = s.getNext();
-            if (s1.getOpcode() == DUP)
-                s1 = s1.getNext(); // sometime the compiler use DUP to reuse
-                                    // TOS
+
+            if(s1.getOpcode() == DUP) {
+                AbstractInsnNode temp = s1.getNext(); // sometime the compiler use DUP to reuse TOS
+                if(newS instanceof LdcInsnNode && (constValue instanceof Long || constValue instanceof Double)) {
+                    units.set(s1, new InsnNode(DUP2));
+                }
+                s1 = temp;
+            }
+
             units.set(s, newS);
             if (s1.getOpcode() == ASTORE) {
                 Type type = Type.getType(constValue.getClass());

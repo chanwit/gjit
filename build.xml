@@ -78,7 +78,11 @@
 
     <target name="build" depends="install-ivy,download-aspectj,download-jarjar"
             description="--> resolve dependencies, compile and run the project">
-        <ivy:retrieve/>
+        <!-- ivy:retrieve/ -->
+    </target>
+
+
+    <target name="compile"  description="compile and run the project">
 
         <copy todir="${lib.dir}">
             <fileset dir="${temp.dir}/lib"/>
@@ -105,13 +109,15 @@
                 <attribute name="Premain-Class" value="org.codehaus.groovy.gjit.agent.Agent" />
                 <attribute name="Can-Redefine-Classes" value="true" />
             </manifest>
-            <zipfileset src="${lib.dir}/asm-util-${asm.version}.jar" />
+            <!-- zipfileset src="${lib.dir}/asm-util-${asm.version}.jar" />
             <zipfileset src="${lib.dir}/asm-tree-${asm.version}.jar" />
             <zipfileset src="${lib.dir}/asm-analysis-${asm.version}.jar" />
             <zipfileset src="${lib.dir}/asm-commons-${asm.version}.jar" />
-            <zipfileset src="${lib.dir}/asm-${asm.version}.jar" />
+            <zipfileset src="${lib.dir}/asm-${asm.version}.jar" / -->
+            <zipfileset src="${lib.dir}/asm-all-${asm.version}.jar" />
             <rule pattern="org.objectweb.**" result="gjitjarjarasm.@1" />
         </jarjar>
+        <copy file="gjit-${gjit.version}.jar" todir="C:/groovy/groovy-1.6.0/lib/" />
     </target>
 
     <target name="clean-build" depends="clean, build" />
