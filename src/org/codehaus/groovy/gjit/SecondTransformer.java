@@ -248,6 +248,7 @@ public class SecondTransformer extends BaseTransformer {
             }
         } else if(s.getOpcode() == ARETURN) {
             AbstractInsnNode p = s.getPrevious();
+            while(p instanceof LabelNode) p = p.getPrevious();
             if(p.getOpcode() == PUTFIELD) {
                 FieldInsnNode f = (FieldInsnNode)p;
                 if(f.desc.length()==1) {
