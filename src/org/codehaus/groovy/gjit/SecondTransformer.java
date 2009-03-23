@@ -213,7 +213,9 @@ public class SecondTransformer extends BaseTransformer {
 
     private boolean fix_XRETURN(AbstractInsnNode s) {
         if(s.getOpcode() >= IRETURN && s.getOpcode() <= DRETURN) {
+            System.out.println("fix_XRETURN");
             AbstractInsnNode p = s.getPrevious();
+            while(p instanceof LabelNode) p = p.getPrevious();
             if(p.getOpcode()==ACONST_NULL) {
                 switch (s.getOpcode()) {
                 case IRETURN:
@@ -230,13 +232,20 @@ public class SecondTransformer extends BaseTransformer {
                     return true;
                 }
             }
-//			DebugUtils.dump = true;
-//			DebugUtils.dump(p);
-//			DebugUtils.dump = false;
             int opcode = getConverterOpCode(getBytecodeType(p), getBytecodeType(s));
             if(opcode != 0) {
                 units.insertBefore(s, new InsnNode(opcode));
                 return true;
+            }
+
+            // case of the result is from call(/2)
+            if(p.getOpcode() == INVOKEINTERFACE) {
+                MethodInsnNode m = (MethodInsnNode)p;
+                if(Type.getArgumentTypes(m.desc).length==2 && m.name.equals("call")) {
+                    Type t = getBytecodeType(s);
+                    unbox(s, t);
+                    return true;
+                }
             }
         } else if(s.getOpcode() == ARETURN) {
             AbstractInsnNode p = s.getPrevious();
