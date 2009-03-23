@@ -784,6 +784,10 @@ public class SecondTransformer extends BaseTransformer {
                     MethodInsnNode iv = ((MethodInsnNode) p);
                     if (iv.name.equals("call") && iv.desc.equals(CALL_SITE_BIN_SIGNATURE)) {
                         unbox(newS, t);
+                    } else if(iv.name.endsWith("next") &&
+                              iv.owner.equals("java/util/Iterator") &&
+                              iv.desc.equals(ITERATOR_NEXT_SIGNATURE)) {
+                        unbox(newS, t);
                     }
                 } else if(getBytecodeType(p) != getBytecodeType(newS)) {
 //					DebugUtils.dump = true;
@@ -1120,6 +1124,7 @@ public class SecondTransformer extends BaseTransformer {
     }
 
     private static final String CALL_SITE_BIN_SIGNATURE = "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
+    private static final String ITERATOR_NEXT_SIGNATURE = "()Ljava/lang/Object;";
 
     private boolean isBinOpPrimitiveCall(AbstractInsnNode s) {
         if (s.getOpcode() != INVOKEINTERFACE)
